@@ -37,6 +37,7 @@ class GLM(object):
         For known values of x, w, and y, calculate the total loglikelihood p(y|x)
         """
         
+        # assert proper shape of weight vector
         try:
             w.shape[1]
         except IndexError:
@@ -72,15 +73,12 @@ class GLM(object):
         pT1 = np.sum(probs_out,axis=1) # get normalization constant (sum of exponentials) --> pT1 ("one hot representation")
         obs = np.divide(probs_out.T,pT1).T # final probabilities calculated with updated weights
         
-        
         if compHess:
             ## compute Hessian
             hess = hessian(opt_log) # function that computes the hessian
             H = hess(w_updated[:,:-1]) # gets matrix for w_hats
-            variance = np.sqrt(np.diag(np.linalg.inv(H.T.reshape((self.m * (self.c-1),self.m * (self.c-1)))))) # calculate variance of weights from Hessian
-        else: 
-            variance = []
+            self.variance = np.sqrt(np.diag(np.linalg.inv(H.T.reshape((self.m * (self.c-1),self.m * (self.c-1)))))) # calculate variance of weights from Hessian
         
-        self.w, self.obs, self.variance = w_updated, obs, variance
+        self.w, self.obs = w_updated, obs
         
         return obs, w_updated

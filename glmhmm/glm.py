@@ -14,6 +14,7 @@ Updated: April 8th, 2020
 import autograd.numpy as np
 from scipy import optimize
 from autograd import value_and_grad, hessian
+import time
 
 class GLM(object):
     
@@ -38,10 +39,8 @@ class GLM(object):
         """
         
         # assert proper shape of weight vector
-        try:
-            w.shape[1]
-        except IndexError:
-            w = w[:,np.newaxis]
+        try: w.shape[1]
+        except IndexError: w = w[:,np.newaxis]
             
         p = np.exp(x@w) # get exponentials e^(wTx)
         p = np.hstack((p,np.ones((len(p),1))))
@@ -82,3 +81,52 @@ class GLM(object):
         self.w, self.obs = w_updated, obs
         
         return obs, w_updated
+    
+    def generate_data(self,wdist=(-0.2,1.2),xdist=(-10,10),bias=True):
+        
+        """
+        Generate simulated data (design matrix, weights, and observations) for fitting a GLM                                                      
+
+        Parameters
+        ----------
+        wdist : tuple, optional
+                sets high and low uniform distribution limits for randomly sampling weight values. The default is (-0.2,1.2).
+        xdist : tuple, optional
+                sets high and low limits for randomly sampling integer data values. The default is (-10,10).
+        bias : boolean, optional
+               determines whether or not to add a bias to the data. The default is True.
+
+        Returns
+        -------
+        x : nxm array of the data (design matrix)
+        w : mxc array of weights
+        y : nxc boolean array of observations
+
+        """
+        
+        ## generate weights
+        w = np.zeros((self.m,self.c)) # initialize array
+        w[:,1:] = np.random.uniform(wdist[0], high=wdist[1],size=(self.m,self.c-1)) # leave first column of weights zeros; randomly sample the rest 
+        
+        ## generate data
+        x = np.random.randint(xdist[0], high=xdist[1],size=(self.n,self.m)) # choose length random inputs between -10 and 10
+        
+        ## add optional bias to weights
+        if bias:
+            x = np.hstack((np.ones_like(x[:,1,np.newaxis]),x)) # append bias column to left side of matrix
+            w = np.vstack((np.ones_like(w[0,:])*np.hstack((np.zeros((1,1)),np.random.uniform(wdist[0], high=wdist[1],size=(1,self.c-1)))),w))
+            
+        ## generate observation probabilities
+        p = np.exp(np.dot(x,w)) # get exponentials e^wTx
+        pnorm = np.divide(p.T,np.sum(p,axis=1)).T # normalize the exponentials 
+        
+        # generate 1-D vector of observations for each n
+        cumdist = pnorm.cumsum(axis=1) # calculate the cumulative distributions
+        undist = np.random.rand(len(cumdist), 1) # generate set of uniformly distributed samples
+        obs = (undist < cumdist).argmax(axis=1) # see where they "fit" in cumdist
+        
+        # convert to nxc matrix of binary values
+        y = np.zeros((self.n,self.c))
+        y[np.arange(self.n),obs] = 1
+            
+        return x,w,y

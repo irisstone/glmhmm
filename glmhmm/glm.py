@@ -32,55 +32,97 @@ class GLM(object):
     def __init__(self,n,m,c):
         self.n, self.m, self.c = n, m, c
         
+    def compObs(self,x,w,normalize=True):
+        """
+        Computes the observation probabilities for each data point.
+
+        Parameters
+        ----------
+        x : nxm array of the data (design matrix)
+        w : mxc array of weights
+        normalize : boolean, optional
+            Determines whether or not observation probabilities are normalized. The default is True.
+
+        Returns
+        -------
+        phi : nxc array of the observation probabilities
+
+        """
+        
+        phi = np.exp(x@w) # get exponentials e^(wTx)
+        if normalize:
+            phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+        
+        return phi
+        
         
     def neglogli(self,x,w,y):
         """
-        For known values of x, w, and y, calculate the total loglikelihood p(y|x)
+        Calculate the total loglikelihood p(y|x)
+
+        Parameters
+        ----------
+        x : nxm array of the data (design matrix)
+        w : mxc array of weights
+        y : nxc 1/0 array of observations
+
+        Returns
+        -------
+        negative sum of the loglikelihood of the observations (y) given the data (x)
+
         """
         
         # assert proper shape of weight vector
         try: w.shape[1]
         except IndexError: w = w[:,np.newaxis]
             
-        p = np.exp(x@w) # get exponentials e^(wTx)
-        p = np.hstack((p,np.ones((len(p),1))))
-        pT1 = np.sum(p,axis=1) # get normalization constant (sum of exponentials) --> pT1 ("one hot representation")
-        pTy = np.sum(np.multiply(p,y),axis=1)
-        log_pyx = np.log(pTy) - np.log(pT1)
+        phi = self.compObs(x,w,normailize=False) 
+        norm = np.sum(phi,axis=1) # get normalization constant 
+        weightedObs = np.sum(np.multiply(phi,y),axis=1)
+        log_pyx = np.log(weightedObs) - np.log(norm) # compute loglikelihood
         
-        assert np.round(np.sum(np.divide(np.exp(x@w).T,np.sum(np.exp(x@w)))),2) == 1, 'Sum of normalized probabilities does not equal 1!'
+        assert np.round(np.sum(np.divide(phi.T,norm)),2) == 1, 'Sum of normalized probabilities does not equal 1!'
         
         self.ll = -np.sum(log_pyx)
-        self.x, self.w, self.y = x, w, y
         
         return -np.sum(log_pyx)
     
     def fit(self,x,w,y,compHess = False):
         """
-        Use gradient descent to optimize weights
+         Use gradient descent to optimize weights
+
+        Parameters
+        ----------
+        x : nxm array of the data (design matrix)
+        w : mxc array of weights
+        y : nxc 1/0 array of observations
+        compHess : boolean, optional
+            sets whether or not to compute the Hessian of the weight matrix. The default is False.
+
+        Returns
+        -------
+        w_new : mxc array of updated weights
+        phi : nxc array of the updated observation probabilities
+
         """
         
         # optimize loglikelihood given weights
-        w_flat = np.ndarray.flatten(w[:,0:-1]) # starting weights for optimization    
+        w_flat = np.ndarray.flatten(w[:,1:]) # flatten weights for optimization    
         opt_log = lambda w: self.neglogli(x,w,y) # calculate log likelihood 
         OptimizeResult = optimize.minimize(value_and_grad(opt_log),w_flat, jac = "True", method = "L-BFGS-B")
        
-        w_updated = np.hstack((np.reshape(OptimizeResult.x,(self.m,self.c-1)),np.zeros((self.m,1))))
+        self.w_new = np.hstack((np.zeros((self.m,1)),np.reshape(OptimizeResult.x,(self.m,self.c-1)))) # reshape and update weights
         
-        # Get updated probabilities (these become observation probabilities in HMM)
-        probs_out = np.exp(np.dot(x,w_updated)) # get exponentials e^wTx
-        pT1 = np.sum(probs_out,axis=1) # get normalization constant (sum of exponentials) --> pT1 ("one hot representation")
-        obs = np.divide(probs_out.T,pT1).T # final probabilities calculated with updated weights
+        # Get updated observation probabilities 
+        self.phi = self.compObs(x,w) 
         
         if compHess:
             ## compute Hessian
             hess = hessian(opt_log) # function that computes the hessian
-            H = hess(w_updated[:,:-1]) # gets matrix for w_hats
+            H = hess(self.w_new[:,1:]) # gets matrix for w_hats
             self.variance = np.sqrt(np.diag(np.linalg.inv(H.T.reshape((self.m * (self.c-1),self.m * (self.c-1)))))) # calculate variance of weights from Hessian
         
-        self.w, self.obs = w_updated, obs
-        
-        return obs, w_updated
+        return self.w_new,self.phi
     
     def generate_data(self,wdist=(-0.2,1.2),xdist=(-10,10),bias=True):
         
@@ -100,7 +142,7 @@ class GLM(object):
         -------
         x : nxm array of the data (design matrix)
         w : mxc array of weights
-        y : nxc boolean array of observations
+        y : nxc 1/0 array of observations
 
         """
         
@@ -117,11 +159,10 @@ class GLM(object):
             w = np.vstack((np.ones_like(w[0,:])*np.hstack((np.zeros((1,1)),np.random.uniform(wdist[0], high=wdist[1],size=(1,self.c-1)))),w))
             
         ## generate observation probabilities
-        p = np.exp(np.dot(x,w)) # get exponentials e^wTx
-        pnorm = np.divide(p.T,np.sum(p,axis=1)).T # normalize the exponentials 
+        phi = self.compObs(x,w) 
         
         # generate 1-D vector of observations for each n
-        cumdist = pnorm.cumsum(axis=1) # calculate the cumulative distributions
+        cumdist = phi.cumsum(axis=1) # calculate the cumulative distributions
         undist = np.random.rand(len(cumdist), 1) # generate set of uniformly distributed samples
         obs = (undist < cumdist).argmax(axis=1) # see where they "fit" in cumdist
         

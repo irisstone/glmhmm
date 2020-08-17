@@ -160,7 +160,7 @@ class GLM(object):
         phi = self.observations.compObs(x,w,normalize=False) # compute observation probabilities (phi)
         
         if reshape_weights:
-            phi = np.hstack((phi,np.ones((len(phi),1))))
+            phi = np.hstack((np.ones((len(phi),1)),phi))
             
         norm = np.sum(phi,axis=1) # get normalization constant 
         weightedObs = np.sum(np.multiply(phi,y),axis=1)

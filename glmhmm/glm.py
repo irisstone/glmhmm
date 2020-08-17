@@ -16,24 +16,37 @@ from scipy import optimize
 from autograd import value_and_grad, hessian
 import time
 from warnings import simplefilter
+import glmhmm.observations as obs
 
 class GLM(object):
     
     """
     Base class for fitting generalized linear models. 
     Notation: 
-        n: number of data points
-        m: number of features
-        c: number of classes 
+        n: number of data/time points
+        m: number of features (inputs to design matrix)
+        c: number of classes (possible observations)
         x: design matrix (nxm)
         y: observations (nxc)
         w: weights mapping x to y (mxc or mx1)
 
     """
-    def __init__(self,n,m,c):
+    def __init__(self,n,m,c,observations="bernoulli"):
         self.n, self.m, self.c = n, m, c
         
-    def compPhi(self,x,w,normalize=True):
+        # Master list of observation classes
+        observation_classes = dict(
+            bernoulli = obs.BernoulliObservations,
+            multinomial = obs.MultinomialObservations
+            )
+        
+        if observations not in observation_classes:
+            raise Exception("Invalid observation model: {}. Must be one of {}".
+                    format(observations, list(observation_classes.keys())))
+ 
+        self.observations = observation_classes[observations](n=self.n,m=self.m,c=self.c)
+        
+    def compObs(self,x,w,normalize=True):
         """
         Computes the GLM observation probabilities for each data point.
 
@@ -55,7 +68,8 @@ class GLM(object):
             phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
         
         return phi
-        
+    
+    #def init_weights(self,wdist=(-0.2,1.2))
         
     def neglogli(self,x,w,y,reshape_weights=False,gammas=None,gaussianPrior=0):
         """
@@ -66,7 +80,7 @@ class GLM(object):
         x : nxm array of the data (design matrix)
         w : mxc array of weights
         y : nxc 1/0 array of observations
-        reshape_weights : boolean, optional. Sets whether or not to reshape weights and add column of zeros. 
+        reshape_weights : boolean, optional. Sets whether or not to reshape weights and add column of ones to phi. 
             The default is False. Typically only True if weights have been flattened prior to calling function, e.g.
             in advance of performing gradient descent. 
         gammas : vector of floats, optional
@@ -83,16 +97,19 @@ class GLM(object):
         
         if reshape_weights:
             w = np.reshape(w,(self.m,self.c-1)) # unflatten weights
-            w = np.hstack((np.zeros((self.m,1)),w))
 
-        phi = self.compPhi(x,w,normalize=False) # compute observation probabilities (phi)
+        phi = self.observations.compObs(x,w,normalize=False) # compute observation probabilities (phi)
+        
+        if reshape_weights:
+            phi = np.hstack((phi,np.ones((len(phi),1))))
+            
         norm = np.sum(phi,axis=1) # get normalization constant 
         weightedObs = np.sum(np.multiply(phi,y),axis=1)
         log_pyx = np.log(weightedObs) - np.log(norm) # compute loglikelihood
         
         assert np.round(np.sum(np.divide(phi.T,norm),axis=0),3).all()==1, 'Sum of normalized probabilities does not equal 1!'
         
-        if gammas.all() != None:
+        if gammas is not None:
             log_pyx = np.multiply(gammas,log_pyx) # apply weighting factor to loglikelihood
         
         self.ll = np.round(-np.sum(log_pyx),15) # np.round ensures value is stored as float and not ArrayBox
@@ -128,9 +145,8 @@ class GLM(object):
         OptimizeResult = optimize.minimize(value_and_grad(opt_log),w_flat, jac = "True", method = "L-BFGS-B")
        
         self.w = np.hstack((np.zeros((self.m,1)),np.reshape(OptimizeResult.x,(self.m,self.c-1)))) # reshape and update weights
-        
         # Get updated observation probabilities 
-        self.phi = self.compPhi(x,w) 
+        self.phi = self.observations.compObs(x,w) 
         
         if compHess:
             ## compute Hessian
@@ -164,13 +180,13 @@ class GLM(object):
         
         ## generate weights
         w = np.zeros((self.m,self.c)) # initialize array
-        w[:,1:] = np.random.uniform(wdist[0], high=wdist[1],size=(self.m,self.c-1)) # leave first column of weights zeros; randomly sample the rest 
+        w[:,1:] = np.random.uniform(low=wdist[0], high=wdist[1],size=(self.m,self.c-1)) # leave first column of weights zeros; randomly sample the rest 
         
         ## generate data
         x = np.random.randint(xdist[0], high=xdist[1],size=(self.n,self.m)) # choose length random inputs between -10 and 10
         
         ## generate observation probabilities
-        phi = self.compPhi(x,w) 
+        phi = self.observations.compObs(x,w) 
         
         # generate 1-D vector of observations for each n
         cumdist = phi.cumsum(axis=1) # calculate the cumulative distributions

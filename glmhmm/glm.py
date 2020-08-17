@@ -69,7 +69,66 @@ class GLM(object):
         
         return phi
     
-    #def init_weights(self,wdist=(-0.2,1.2))
+    def init_weights(self,wdist=(-0.2,1.2)):
+        """
+        Initialize weights from uniform distribution.
+        
+        Parameters
+        ----------
+        wdist : tuple, optional
+                sets high and low uniform distribution limits for randomly sampling weight values. The default is (-0.2,1.2).
+
+        Returns
+        -------
+        w_init: mxc array of weights with first column set to zeros
+        """
+        
+        w_init = np.zeros((self.m,self.c)) # initialize array
+        w_init[:,1:] = np.random.uniform(low=wdist[0], high=wdist[1],size=(self.m,self.c-1)) # leave first column of weights zeros; randomly sample the rest 
+        
+        return w_init
+    
+    def generate_data(self,wdist=(-0.2,1.2),xdist=(-10,10)):
+        
+        """
+        Generate simulated data (design matrix, weights, and observations) for fitting a GLM                                                      
+
+        Parameters
+        ----------
+        wdist : tuple, optional
+                sets high and low uniform distribution limits for randomly sampling weight values. The default is (-0.2,1.2).
+        xdist : tuple, optional
+                sets high and low limits for randomly sampling integer data values. The default is (-10,10).
+        bias : boolean, optional
+               determines whether or not to add a bias to the data. The default is True.
+
+        Returns
+        -------
+        x : nxm array of the data (design matrix)
+        w : mxc array of weights
+        y : nxc 1/0 array of observations
+
+        """
+        
+        ## generate weights
+        w = self.init_weights(wdist=wdist)
+        
+        ## generate data
+        x = np.random.randint(xdist[0], high=xdist[1],size=(self.n,self.m)) # choose length random inputs between -10 and 10
+        
+        ## generate observation probabilities
+        phi = self.observations.compObs(x,w) 
+        
+        # generate 1-D vector of observations for each n
+        cumdist = phi.cumsum(axis=1) # calculate the cumulative distributions
+        undist = np.random.rand(len(cumdist), 1) # generate set of uniformly distributed samples
+        obs = (undist < cumdist).argmax(axis=1) # see where they "fit" in cumdist
+        
+        # convert to nxc matrix of binary values
+        y = np.zeros((self.n,self.c))
+        y[np.arange(self.n),obs] = 1
+            
+        return x,w,y
         
     def neglogli(self,x,w,y,reshape_weights=False,gammas=None,gaussianPrior=0):
         """
@@ -155,46 +214,3 @@ class GLM(object):
             self.variance = np.sqrt(np.diag(np.linalg.inv(H.T.reshape((self.m * (self.c-1),self.m * (self.c-1)))))) # calculate variance of weights from Hessian
         
         return self.w,self.phi
-    
-    def generate_data(self,wdist=(-0.2,1.2),xdist=(-10,10)):
-        
-        """
-        Generate simulated data (design matrix, weights, and observations) for fitting a GLM                                                      
-
-        Parameters
-        ----------
-        wdist : tuple, optional
-                sets high and low uniform distribution limits for randomly sampling weight values. The default is (-0.2,1.2).
-        xdist : tuple, optional
-                sets high and low limits for randomly sampling integer data values. The default is (-10,10).
-        bias : boolean, optional
-               determines whether or not to add a bias to the data. The default is True.
-
-        Returns
-        -------
-        x : nxm array of the data (design matrix)
-        w : mxc array of weights
-        y : nxc 1/0 array of observations
-
-        """
-        
-        ## generate weights
-        w = np.zeros((self.m,self.c)) # initialize array
-        w[:,1:] = np.random.uniform(low=wdist[0], high=wdist[1],size=(self.m,self.c-1)) # leave first column of weights zeros; randomly sample the rest 
-        
-        ## generate data
-        x = np.random.randint(xdist[0], high=xdist[1],size=(self.n,self.m)) # choose length random inputs between -10 and 10
-        
-        ## generate observation probabilities
-        phi = self.observations.compObs(x,w) 
-        
-        # generate 1-D vector of observations for each n
-        cumdist = phi.cumsum(axis=1) # calculate the cumulative distributions
-        undist = np.random.rand(len(cumdist), 1) # generate set of uniformly distributed samples
-        obs = (undist < cumdist).argmax(axis=1) # see where they "fit" in cumdist
-        
-        # convert to nxc matrix of binary values
-        y = np.zeros((self.n,self.c))
-        y[np.arange(self.n),obs] = 1
-            
-        return x,w,y

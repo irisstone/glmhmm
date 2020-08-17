@@ -171,9 +171,9 @@ class GLM(object):
         if gammas is not None:
             log_pyx = np.multiply(gammas,log_pyx) # apply weighting factor to loglikelihood
         
-        self.ll = np.round(-np.sum(log_pyx),15) # np.round ensures value is stored as float and not ArrayBox
+        self.ll = np.round(np.sum(log_pyx),15) # np.round ensures value is stored as float and not ArrayBox
         
-        return -np.sum(log_pyx) + (((1*gaussianPrior)**2)/2 * sum(w ** 2))
+        return -np.sum(log_pyx) + (((1*gaussianPrior)**2)/2 * np.sum(w ** 2))
     
     def fit(self,x,w,y,compHess=False,gammas=None,gaussianPrior=0):
         """

@@ -20,7 +20,7 @@ class HMM(object):
     Base class for fitting hidden Markov models. 
     Notation: 
         n: number of data points
-        m: number of features (inputs to design matrix)
+        d: number of features (inputs to design matrix)
         c: number of classes (possible observations)
         k: number of states (states)
         X: design matrix (nxm)
@@ -29,8 +29,8 @@ class HMM(object):
 
     """
     
-    def __init__(self,n,m,c,k):
-            self.n, self.m, self.c, self.k  = n, m, c, k
+    def __init__(self,n,d,c,k):
+            self.n, self.d, self.c, self.k  = n, d, c, k
     
     def initialize_parameters(self,emissions=['dirichlet',5,1],transitions=['dirichlet',5,1],state_priors='uniform'):
         '''
@@ -72,7 +72,7 @@ class HMM(object):
 
         Returns
         -------
-        y : nxc matrix of observations (the data)
+        y : nx1 vector of observations (the data)
         z : nx1 vector of latent states
 
         '''
@@ -101,11 +101,46 @@ class HMM(object):
         
         return
         
-    def forwardPass(self):
+    def _forwardPass(self,y,A,phi):
         
-        return
+        '''
+        Computes forward pass of Expectation Maximization (EM) algorithm.
+        
+        Parameters
+        ----------
+        y : nx1 vector of observations
+        A : kxk matrix of transition probabilities
+        phi : kxc or nxkxc matrix of emission probabilities
+
+        Returns
+        -------
+        ll : float, marginal log-likelihood of the data p(y)
+        alpha : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+        cs : nx1 vector of the forward marginal likelihoods
+
+        '''
+        
+        alpha = np.zeros((self.n,self.k)) # forward probabilities p(z_t | x_1:t)
+        cs = np.zeros(self.n) # forward marginal likelihoods
+        
+        # first time bin
+        pxz = phi[:,int(y[0])]
+        cs[0] = np.sum(pxz) # normalizer
+        alpha[0] = pxz/cs[0] # conditional p(z_1 | x_1)
     
-    def backwardPass(self):
+        # forward pass for remaining time bins
+        for i in np.arange(1,self.n):
+            alpha_prior = alpha[i-1]@A # propogate uncertainty forward
+            pxz = np.multiply(phi[:,int(y[i])],alpha_prior) # joint P(x_1:t,z_t)
+            cs[i] = np.sum(pxz) # conditional p(x_t | x_1:t-1)
+            alpha[i] = pxz/cs[i] # conditional p(z_t | x_1:t)
+        
+        ll = np.sum(np.log(cs))
+        
+        return ll,alpha,cs
+        
+    
+    def _backwardPass(self):
         
         return
     

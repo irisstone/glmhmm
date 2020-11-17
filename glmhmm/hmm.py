@@ -12,112 +12,90 @@ Updated: Sep 1, 2020
 """
 
 import numpy as np
+from glmhmm.init_params import init_transitions, init_emissions, init_states
 
 class HMM(object):
 
     """
     Base class for fitting hidden Markov models. 
     Notation: 
-        n: number of data/time points
+        n: number of data points
         m: number of features (inputs to design matrix)
         c: number of classes (possible observations)
         k: number of states (states)
-        x: design matrix (nxm)
-        y: observations (nxc)
+        X: design matrix (nxm)
+        Y: observations (nxc)
         w: weights mapping x to y (mxc or mx1)
 
     """
     
     def __init__(self,n,m,c,k):
             self.n, self.m, self.c, self.k  = n, m, c, k
-            
-    def initialize_transitions(self,distribution='dirichlet',alpha_diag=5,alpha_full=1):
-        
-        """
-        Initializes values for the transition probabilities.
+    
+    def initialize_parameters(self,emissions=['dirichlet',5,1],transitions=['dirichlet',5,1],state_priors='uniform'):
+        '''
 
         Parameters
         ----------
-        distribution : string, optional
-            Sets the distribution to use when initializing the transition probabilities. The default is dirichlet.
-        alpha_diag : int, optional
-            Sets the concentration parameter for the diagonal values when using a Dirichlet distribution. Default is 5. 
-        alpha_full : int, optional
-            Sets the concentration parameter for the off-diagonal values when using a Dirichlet distribution. Default is 1.
+        emissions : list, optional
+            Contains the name of the desired distribution for initialization (string). The default is ['uniform',5,1].
+        transitions : TYPE, optional
+            DESCRIPTION. The default is ['dirichlet',5,1].
+        state_priors : TYPE, optional
+            DESCRIPTION. The default is None.
 
         Returns
         -------
-        A : kxk matrix of the transition probabilities
+        A : kxk matrix of initial transition probabilities.
+        phi : mxc matrix of initial emission probabilities.
+        pi : kx1 vector of initial state probabilities for t=1.
 
-        """
+        '''
         
-        if distribution == 'dirichlet':
+        A = init_transitions(self,distribution=transitions[0],alpha_diag=transitions[1],alpha_full=transitions[2])
         
-            # Make transition matrix by sampling each row from Dirichlet distribution (achieved by normalizing gamma random variables)
-            A = np.random.gamma(alpha_full*np.ones((self.k,self.k)) + alpha_diag*np.identity(self.k),1)
-            A = A/np.repeat(np.reshape(np.sum(A,axis=1),(1,self.k)),self.k,0).T
-            
-        elif distribution == 'uniform':
-            
-            # Make transition matrix probabilities uniform 
-            A = (1/self.k) * np.ones((self.k,self.k))
+        phi = init_emissions(self,distribution=emissions[0],alpha_diag=emissions[1],alpha_full=emissions[2])
         
-        return A
+        pi = init_states(self,state_priors)
+        
+        return A,phi,pi
     
-    def initialize_states(self,distribution='uniform'):
+
         
-        """
-        Initializes values for the state probabilities at t=1.
+    def generate_data(self,A,phi):
+        '''
 
         Parameters
         ----------
-        distribution : string, optional
-            Sets the distribution to use when initializing the state probabilities for t=1. The default is uniform (same probability for each state).
+        A : kxk matrix of transition probabilities
+        phi : kxc or nxkxc matrix of emission probabilities
 
         Returns
         -------
-        A : kx1 vector of the state probabilities for t=1
+        y : nxc matrix of observations (the data)
+        z : nx1 vector of latent states
 
-        """
+        '''
         
-        if distribution == 'uniform':
-            pi = (1/self.k) * np.ones((self.k,1))
+        zi = np.random.choice(np.arange(0,len(A)))  # randomly select initial state
+        y = np.zeros(self.n) 
+        z = np.zeros(self.n)
         
-        return pi
-    
-    def initialize_emissions(self,distribution='dirichlet',alpha_diag=5,alpha_full=1):
-        
-        """
-        Initializes values for the emission (observation) probabilities.
+        # generate observations and states using A and phi
+        for i in range(self.n):
+            z[i] = zi
+            #if len(M.shape) == 2:
+            p = phi[zi,:] # for static emission probabilities
+            #elif len(M.shape) == 3:
+                #p = M[i,zi,:] # for emission probabilities generated using a GLM
 
-        Parameters
-        ----------
-        distribution : string, optional
-            Sets the distribution to use when initializing the emission probabilities. The default is dirichlet.
-        alpha_diag : int, optional
-            Sets the concentration parameter for the diagonal values when using a Dirichlet distribution. Default is 5. 
-        alpha_full : int, optional
-            Sets the concentration parameter for the off-diagonal values when using a Dirichlet distribution. Default is 1.
+            y[i] = np.random.choice(phi.shape[1], p = p)
 
-        Returns
-        -------
-        phi : nxc matrix of the emission probabilities
-
-        """
+            # select z_{i+1} using z_i and A
+            zi = np.random.choice(A.shape[0], p = A[zi, :])
         
-        if distribution == 'dirichlet':
-            # Make emissions matrix by sampling each row from Dirichlet distribution (achieved by normalizing gamma random variables)
-            phi = np.random.gamma(alpha_full,1,(self.c,self.k))
-            phi = phi + np.append(alpha_diag*np.identity(self.k), np.zeros((self.c-self.k,self.k)),axis=0) # add to diagonal
-            phi = phi/np.repeat(np.reshape(np.sum(phi,axis=0),(1,self.k)),self.c,0) # normalize so columns sum to 1
-        
-        return phi
-    
+        return y, z
 
-        
-    def generate_data(self,A,M):
-
-        return
     
     def neglogli(self):
         

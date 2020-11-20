@@ -101,7 +101,7 @@ class HMM(object):
         
         return
         
-    def _forwardPass(self,y,A,phi):
+    def _forwardPass(self,y,A,phi,pi0=None):
         
         '''
         Computes forward pass of Expectation Maximization (EM) algorithm.
@@ -123,8 +123,12 @@ class HMM(object):
         alpha = np.zeros((self.n,self.k)) # forward probabilities p(z_t | x_1:t)
         cs = np.zeros(self.n) # forward marginal likelihoods
         
+        # if not fitting initial state probabilities, initialize to ones
+        if not pi0:
+            pi0 = np.ones(self.k)
+        
         # first time bin
-        pxz = phi[:,int(y[0])]
+        pxz = np.multiply(phi[:,int(y[0])],pi0) # weight t=0 observation probabilities by initial state probabilities
         cs[0] = np.sum(pxz) # normalizer
         alpha[0] = pxz/cs[0] # conditional p(z_1 | x_1)
     

@@ -144,9 +144,41 @@ class HMM(object):
         return ll,alpha,cs
         
     
-    def _backwardPass(self):
+    def _backwardPass(self,y,A,phi,alpha,cs):
         
-        return
+        '''
+        Computes backward pass of Expectation Maximization (EM) algorithm.
+        
+        Parameters
+        ----------
+        y : nx1 vector of observations
+        A : kxk matrix of transition probabilities
+        phi : kxc or nxkxc matrix of emission probabilities
+        alpha : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+        cs : nx1 vector of the forward marginal likelihoods
+
+        Returns
+        -------
+        pBack : nxk matrix of the posterior probabilities of the latent states
+        beta : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+        zhatBack : nx1 vector of the most probable state at each time point
+
+        '''
+        
+        beta = np.zeros((self.n,self.k))
+        
+        # last time bin
+        beta[-1] = 1 # take beta(z_N) = 1
+        
+        # backward pass for remaining time bins
+        for i in np.arange(self.n-2,-1,-1):
+            beta_prior = np.multiply(beta[i+1],phi[:,int(y[i+1])]) # propogate uncertainty backward
+            beta[i] = (A@beta_prior)/cs[i+1]
+            
+        pBack = np.multiply(alpha,beta) # posterior after backward pass
+        zhatBack = np.argmax(pBack,axis=1) # decode from likelihoods only
+        
+        return pBack,beta,zhatBack
     
     def EM(self):
         

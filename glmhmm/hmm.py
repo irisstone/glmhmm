@@ -13,7 +13,7 @@ Updated: Sep 1, 2020
 
 import numpy as np
 from glmhmm.init_params import init_transitions, init_emissions, init_states
-from glmhmm import glm
+#from glmhmm import glm
 
 class HMM(object):
 

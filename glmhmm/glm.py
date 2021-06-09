@@ -14,7 +14,6 @@ Updated: April 8th, 2020
 import autograd.numpy as np
 from scipy import optimize
 from autograd import value_and_grad, hessian
-import time
 from warnings import simplefilter
 import glmhmm.observations as obs
 
@@ -88,7 +87,7 @@ class GLM(object):
         
         return w_init
     
-    def generate_data(self,wdist=(-0.2,1.2),xdist=(-10,10)):
+    def generate_data(self,wdist=(-1,1),xdist=(-10,10)):
         
         """
         Generate simulated data (design matrix, weights, and observations) for fitting a GLM                                                      
@@ -114,7 +113,7 @@ class GLM(object):
         w = self.init_weights(wdist=wdist)
         
         ## generate data
-        x = np.random.randint(xdist[0], high=xdist[1],size=(self.n,self.m)) # choose length random inputs between -10 and 10
+        x = np.random.uniform(xdist[0], high=xdist[1],size=(self.n,self.m)) # choose length random inputs between -10 and 10
         
         ## generate observation probabilities
         phi = self.observations.compObs(x,w) 
@@ -210,7 +209,7 @@ class GLM(object):
         if compHess:
             ## compute Hessian
             hess = hessian(opt_log) # function that computes the hessian
-            H = hess(self.w_new[:,1:]) # gets matrix for w_hats
+            H = hess(self.w[:,1:]) # gets matrix for w_hats
             self.variance = np.sqrt(np.diag(np.linalg.inv(H.T.reshape((self.m * (self.c-1),self.m * (self.c-1)))))) # calculate variance of weights from Hessian
         
         return self.w,self.phi

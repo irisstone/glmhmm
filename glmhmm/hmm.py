@@ -13,6 +13,7 @@ Updated: Sep 1, 2020
 
 import numpy as np
 from glmhmm.init_params import init_transitions, init_emissions, init_states
+from glmhmm import glm
 
 class HMM(object):
 
@@ -32,13 +33,15 @@ class HMM(object):
     def __init__(self,n,d,c,k):
             self.n, self.d, self.c, self.k  = n, d, c, k
     
-    def initialize_parameters(self,emissions=['dirichlet',5,1],transitions=['dirichlet',5,1],state_priors='uniform'):
+    def generate_params(self,emissions=['dirichlet',5,1],transitions=['dirichlet',5,1],state_priors='uniform'):
         '''
-
+        Generates parameters A, phi, and pi for an HMM. Can be used to generate true parameters for simulated data
+        or to initialize parameters for fitting. 
+        
         Parameters
         ----------
         emissions : list, optional
-            Contains the name of the desired distribution for initialization (string). The default is ['uniform',5,1].
+            Contains the name of the desired distribution (string). The default is ['uniform',5,1].
         transitions : TYPE, optional
             DESCRIPTION. The default is ['dirichlet',5,1].
         state_priors : TYPE, optional
@@ -46,9 +49,9 @@ class HMM(object):
 
         Returns
         -------
-        A : kxk matrix of initial transition probabilities.
-        phi : mxc matrix of initial emission probabilities.
-        pi : kx1 vector of initial state probabilities for t=1.
+        A : kxk matrix of transition probabilities.
+        phi : mxc matrix of emission probabilities.
+        pi : kx1 vector of state probabilities for t=1.
 
         '''
         
@@ -84,10 +87,7 @@ class HMM(object):
         # generate observations and states using A and phi
         for i in range(self.n):
             z[i] = zi
-            #if len(M.shape) == 2:
             p = phi[zi,:] # for static emission probabilities
-            #elif len(M.shape) == 3:
-                #p = M[i,zi,:] # for emission probabilities generated using a GLM
 
             y[i] = np.random.choice(phi.shape[1], p = p)
 
@@ -101,7 +101,7 @@ class HMM(object):
         
         return
         
-    def _forwardPass(self,y,A,phi,pi0=None):
+    def forwardPass(self,y,A,phi,pi0=None):
         
         '''
         Computes forward pass of Expectation Maximization (EM) algorithm; first half of .
@@ -110,7 +110,7 @@ class HMM(object):
         ----------
         y : nx1 vector of observations
         A : kxk matrix of transition probabilities
-        phi : kxc or nxkxc matrix of emission probabilities
+        phi : nxkxc matrix of emission probabilities
 
         Returns
         -------
@@ -135,9 +135,9 @@ class HMM(object):
         # forward pass for remaining time bins
         for i in np.arange(1,self.n):
             alpha_prior = alpha[i-1]@A # propogate uncertainty forward
-            pxz = np.multiply(phi[:,int(y[i])],alpha_prior) # joint P(x_1:t,z_t)
-            cs[i] = np.sum(pxz) # conditional p(x_t | x_1:t-1)
-            alpha[i] = pxz/cs[i] # conditional p(z_t | x_1:t)
+            pxz = np.multiply(phi[i,:,int(y[i])],alpha_prior) # joint P(y_1:t,z_t)
+            cs[i] = np.sum(pxz) # conditional p(y_t | y_1:t-1)
+            alpha[i] = pxz/cs[i] # conditional p(z_t | y_1:t)
         
         ll = np.sum(np.log(cs))
         
@@ -153,7 +153,7 @@ class HMM(object):
         ----------
         y : nx1 vector of observations
         A : kxk matrix of transition probabilities
-        phi : kxc or nxkxc matrix of emission probabilities
+        phi : nxkxc matrix of emission probabilities
         alpha : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
         cs : nx1 vector of the forward marginal likelihoods
 
@@ -178,68 +178,71 @@ class HMM(object):
         pBack = np.multiply(alpha,beta) # posterior after backward pass -> alpha_hat(z_n)*beta_hat(z_n)
         zhatBack = np.argmax(pBack,axis=1) # decode from likelihoods only
         
+        assert np.round(sum(pBack[0]),5) == 1, "Sum of posterior state probabilities does not equal 1"
+        
         return pBack,beta,zhatBack
     
-    def _updateTransitions():
+    def _updateTransitions(self,y,alpha,beta,cs,A,phi):
         
-                # CALCULATE XIS
-        xis_sum = []
-        xis = np.zeros((nT-1,nStates,nStates))
+        '''
+        Updates transition probabilities as part of the M-step of the EM algorithm.
+        Currently only functional for stationary transitions (GLM on transitions not supported)
+        Uses closed form updates as described in Bishop Ch. 13
         
-        for i in np.arange(0,nT-1):
-            if method == "GLM":
-                bm = np.multiply(bb[i+1,:],M[:,i,int(yy[i+1])])
-            elif method == "standard":
-                bm = np.multiply(bb[i+1,:],M[int(yy[i+1]),:])
-            a = np.reshape(aa[i,:],(nStates,1))
-            abm = np.multiply(bm,a)
-            abmA = np.multiply(abm,A)/cs[i+1]
+        Parameters
+        ----------
+        y : nx1 vector of observations
+        alpha : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+        beta : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+        cs : nx1 vector of the forward marginal likelihoods
+        A : kxk matrix of transition probabilities
+        phi : kxc or nxkxc matrix of emission probabilities
         
-            xis[i,:,:] = abmA
-            xis_sum.append(np.sum(abmA))
-            
 
-        assert np.round(sum(gammas[0]),5) == 1, "Sum of gammas does not equal 1" 
-        
-        
-        # new transition matrix
-        xis_n = np.reshape(np.sum(xis,axis=0),(nStates,nStates)) # sum_N xis
-        xis_kn = np.reshape(np.sum(np.sum(xis,axis=0),axis=1),(nStates,1)) # sum_k sum_N xis
-        A_jk = xis_n/xis_kn
-        
-        return A
-        
-    def _updateObservations():
-        
-        x_ni = np.zeros((nT,nObs))
-        for i in np.arange(nT):
-            x_ni[i,int(yy[i])] = 1 # assign 1 to index assoc. with observation
+        Returns
+        -------
+        A_new : kxk matrix of updated transition probabilities
 
-            
-        if method == "standard":
+        '''
         
-            # new observation matrix
-            gammaxni_n = np.dot(gammas.T,x_ni).T # sum_N gamma(z_nk)*x_ni
-            gamma_n = np.sum(gammas,axis=0) # sum_N gamma(z_nk)
-            mu_ik = gammaxni_n/gamma_n
-            
-            M = mu_ik # observation matrix
-            
-        if method == "GLM":
-            
-            ## run GLM to get new observation matrix, weights, covariance of weights
-            mu_ik = np.zeros((nStates,nT,nObs))
-            w_updated = np.zeros((nStates,nFeat,nObs))
-            variances = np.zeros((nStates,nFeat*(nObs-1)))
-            for zn in np.arange(nStates):
-                mu_ik[zn,:,:], w_updated[zn,:,:], logl, _ = GLM.weighted_optimize_weights(w_init[zn,:,:],x_true,y_true,gammas[:,zn],"L-BFGS-B",bias=0, compHess = False, gaussPrior = gaussian_prior) 
-                
-            M =  mu_ik # update array of observation matrices
-            w_init = w_updated # update weights
+        # compute xis, the joint posterior distribution of two successive latent variables p(z_{t-1},z_t |Y,theta_old)
+        xis = np.zeros((self.n-1,self.k,self.k))
+        for i in np.arange(0,self.n-1):
+            beta_phi = beta[i+1,:] * phi[i,int(y[i+1]),:]
+            alpha_reshaped = np.reshape(alpha[i,:],(self.k,1))
+            xis[i,:,:] = ((beta_phi * alpha_reshaped) * A)/cs[i+1]
         
-        return phi
+        # reshape and sum xis to obtain new transition matrix
+        xis_n = np.reshape(np.sum(xis,axis=0),(self.k,self.k)) # sum_N xis
+        xis_kn = np.reshape(np.sum(np.sum(xis,axis=0),axis=1),(self.k,1)) # sum_k sum_N xis
+        A_new = xis_n/xis_kn
         
-    def _updateInitStates(gammas):
+        return A_new
+        
+    def _updateObservations(self,y,gammas):
+        '''
+        Updates emissions probabilities as part of the M-step of the EM algorithm.
+        For input-driven observations, see the GLMHMM class
+        Uses closed form updates as described in Bishop Ch. 13
+        
+        Parameters
+        ----------
+        y : nx1 vector of observations
+        gammas : nxk matrix of the posterior probabilities of the latent states
+        
+        Returns
+        -------
+        kxc matrix of updated transition probabilities
+
+        '''
+            
+        x_ni = np.zeros((self.n,self.c))
+        for i in np.arange(self.n):
+            x_ni[i,int(y[i])] = 1 # assign 1 to index assoc. with observation
+        
+        return (gammas.T @ x_ni).T / np.sum(gammas,axis=0)
+        
+    def _updateInitStates(self,gammas):
         '''
         Computes the updated initial state probabilities as part of the M-step of the EM algorithm.
 
@@ -249,40 +252,50 @@ class HMM(object):
 
         Returns
         -------
-        pi0 : kx1 vector of initial latent state probabilities (for t=1)
+        kx1 vector of initial latent state probabilities (for t=1)
 
         '''
         
-        pi0 = np.divide(gammas[0],sum(gammas[0])) # new initial latent state probabilities
-        
-        return pi0
+        return np.divide(gammas[0],sum(gammas[0])) # new initial latent state probabilities
     
-    def _updateParams(gammas,beta,alpha,cs,A,fit_init_states = False):
+    def _updateParams(self,y,gammas,beta,alpha,cs,A,phi,fit_init_states = False):
+        '''
+        Computes the updated parameters as part of the M-step of the EM algorithm.
+
+        Parameters
+        ----------
+        y : nx1 vector of observations
+        gammas : nxk matrix of the posterior probabilities of the latent states
+        beta : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+        alpha : nx1 vector of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+        cs : nx1 vector of the forward marginal likelihoods
+        A : kxk matrix of transition probabilities
+        phi : kxc or nxkxc matrix of emission probabilities
+        fit_init_states : boolean indicating whether initial state distribution is included as a learned parameter
+
+        Returns
+        -------
+        kx1 vector of initial latent state probabilities (for t=1)
+
+        '''
         
-        A = _updateTransitions():
+        A = self._updateTransitions(y,alpha,beta,cs,A,phi)
             
-        phi = _updateObservations():
+        phi = self._updateObservations(y)
         
-        pi0 = _updateInitStates(gammas)
+        if fit_init_states: 
+            pi0 = self._updateInitStates(gammas)
+        else:
+            pi0 = self.pi0
         
-        # Store values in matrices
-        As[n,:,:] = A
-        if method == "standard":
-            Ms[n,:,:] = M
-        elif method == "GLM":
-            M_rearranged = np.zeros((nT,nObs,nStates))
-            for i in np.arange(0,nT):
-                M_rearranged[i,:,:] = M[:,i,:].T
-            
-            Ms[n,:,:,:] = M_rearranged
-            
-        ws[n,:,:,:] = w_updated
-            
-        logLikelihoods[n] = ll
-        
-        return A,phi,pi0
+        return A, phi, pi0
 
     
-    def EM(self):
+    def fit(self, phi):
+        
+        # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
+        if len(phi.shape) == 2:
+            phi = phi[np.newaxis,:,:] # add axis along n dim
+            phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
         
         return

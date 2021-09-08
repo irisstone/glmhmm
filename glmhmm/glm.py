@@ -2,13 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Nov 25 16:06:06 2019
-
 @author: istone
-
 Class for fitting generalized linear models (GLMs).
-
 Updated: April 8th, 2020
-
 """
 #import numpy as np
 import autograd.numpy as np
@@ -28,7 +24,6 @@ class GLM(object):
         x: design matrix (nxm)
         y: observations (nxc)
         w: weights mapping x to y (mxc or mx1)
-
     """
     def __init__(self,n,m,c,observations="bernoulli"):
         self.n, self.m, self.c = n, m, c
@@ -48,18 +43,15 @@ class GLM(object):
     def compObs(self,x,w,normalize=True):
         """
         Computes the GLM observation probabilities for each data point.
-
         Parameters
         ----------
         x : nxm array of the data (design matrix)
         w : mxc array of weights
         normalize : boolean, optional
             Determines whether or not observation probabilities are normalized. The default is True.
-
         Returns
         -------
         phi : nxc array of the observation probabilities
-
         """
         
         phi = np.exp(x@w) # get exponentials e^(wTx)
@@ -76,7 +68,6 @@ class GLM(object):
         ----------
         wdist : tuple, optional
                 sets high and low uniform distribution limits for randomly sampling weight values. The default is (-0.2,1.2).
-
         Returns
         -------
         w_init: mxc array of weights with first column set to zeros
@@ -91,7 +82,6 @@ class GLM(object):
         
         """
         Generate simulated data (design matrix, weights, and observations) for fitting a GLM                                                      
-
         Parameters
         ----------
         wdist : tuple, optional
@@ -100,13 +90,11 @@ class GLM(object):
                 sets high and low limits for randomly sampling integer data values. The default is (-10,10).
         bias : boolean, optional
                determines whether or not to add a bias to the data. The default is True.
-
         Returns
         -------
         x : nxm array of the data (design matrix)
         w : mxc array of weights
         y : nxc 1/0 array of observations
-
         """
         
         ## generate weights
@@ -132,7 +120,6 @@ class GLM(object):
     def neglogli(self,x,w,y,reshape_weights=False,gammas=None,gaussianPrior=0):
         """
         Calculate the total loglikelihood p(y|x)
-
         Parameters
         ----------
         x : nxm array of the data (design matrix)
@@ -146,11 +133,9 @@ class GLM(object):
             (equivalent to incluing a gamma array of all 1s). Default is None.
         gaussianPrior : float, optional. 
             Sets the inverse variance of the Gaussian prior on the loglikelihood function. Default is 0, equivalent to no prior. 
-
         Returns
         -------
         negative sum of the loglikelihood of the observations (y) given the data (x)
-
         """
         
         if reshape_weights:
@@ -177,7 +162,6 @@ class GLM(object):
     def fit(self,x,w,y,compHess=False,gammas=None,gaussianPrior=0):
         """
          Use gradient descent to optimize weights
-
         Parameters
         ----------
         x : nxm array of the data (design matrix)
@@ -188,12 +172,10 @@ class GLM(object):
         gammas : vector of floats, optional
             An array of values to include as weighting factors on the loglikelihood. If None, does not apply any weighting 
             (equivalent to incluing a gamma array of all 1s). Default is None.
-
         Returns
         -------
         w_new : mxc array of updated weights
         phi : nxc array of the updated observation probabilities
-
         """
         
         # optimize loglikelihood given weights

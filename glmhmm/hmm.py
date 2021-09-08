@@ -124,18 +124,24 @@ class HMM(object):
         cs = np.zeros(self.n) # forward marginal likelihoods
         
         # if not fitting initial state probabilities, initialize to ones
-        if not pi0:
-            pi0 = np.ones(self.k)
+        if not np.any(pi0):
+            pi0 = np.ones(self.k)/self.k
+            
+        # if phi is 2d, add a time/trial axis (repeats matrix n times for stationary transitions)
+        if len(phi.shape) == 2:
+            phir = np.broadcast_to(phi, (self.n, self.k, self.c))
+        elif len(phi.shape) == 3:
+            phir = phi
         
         # first time bin
-        pxz = np.multiply(phi[:,int(y[0])],pi0) # weight t=0 observation probabilities by initial state probabilities
+        pxz = np.multiply(phir[0,:,int(y[0])],np.squeeze(pi0)) # weight t=0 observation probabilities by initial state probabilities
         cs[0] = np.sum(pxz) # normalizer
         alpha[0] = pxz/cs[0] # conditional p(z_1 | x_1)
     
         # forward pass for remaining time bins
         for i in np.arange(1,self.n):
             alpha_prior = alpha[i-1]@A # propogate uncertainty forward
-            pxz = np.multiply(phi[i,:,int(y[i])],alpha_prior) # joint P(y_1:t,z_t)
+            pxz = np.multiply(phir[i,:,int(y[i])],alpha_prior) # joint P(y_1:t,z_t)
             cs[i] = np.sum(pxz) # conditional p(y_t | y_1:t-1)
             alpha[i] = pxz/cs[i] # conditional p(z_t | y_1:t)
         
@@ -144,7 +150,7 @@ class HMM(object):
         return ll,alpha,cs
         
     
-    def _backwardPass(self,y,A,phi,alpha,cs):
+    def backwardPass(self,y,A,phi,alpha,cs):
         
         '''
         Computes backward pass of Expectation Maximization (EM) algorithm; second half of "E-step".
@@ -223,7 +229,7 @@ class HMM(object):
         '''
         Updates emissions probabilities as part of the M-step of the EM algorithm.
         For input-driven observations, see the GLMHMM class
-        Uses closed form updates as described in Bishop Ch. 13
+        Uses closed form updates as described in Bishop Ch. 13 p. 618
         
         Parameters
         ----------
@@ -299,3 +305,9 @@ class HMM(object):
             phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
         
         return
+    
+class GLMHMM(HMM):
+    
+    def __init__(self,n,d,c,k):
+        super().__init__(n,d,c,k):
+        

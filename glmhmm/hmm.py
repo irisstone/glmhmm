@@ -13,7 +13,7 @@ Updated: Sep 1, 2020
 
 import numpy as np
 from glmhmm.init_params import init_transitions, init_emissions, init_states
-#from glmhmm import glm
+from glmhmm import glm
 
 class HMM(object):
 
@@ -32,6 +32,7 @@ class HMM(object):
     
     def __init__(self,n,d,c,k):
             self.n, self.d, self.c, self.k  = n, d, c, k
+    
     
     def generate_params(self,emissions=['dirichlet',5,1],transitions=['dirichlet',5,1],state_priors='uniform'):
         '''
@@ -104,7 +105,7 @@ class HMM(object):
     def forwardPass(self,y,A,phi,pi0=None):
         
         '''
-        Computes forward pass of Expectation Maximization (EM) algorithm; first half of .
+        Computes forward pass of Expectation Maximization (EM) algorithm; first half of E-step.
         
         Parameters
         ----------
@@ -238,7 +239,7 @@ class HMM(object):
         
         Returns
         -------
-        kxc matrix of updated transition probabilities
+        kxc matrix of updated observation probabilities
 
         '''
             
@@ -299,6 +300,10 @@ class HMM(object):
     
     def fit(self, phi):
         
+        # E STEP
+        
+        # M STEP
+        
         # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
         if len(phi.shape) == 2:
             phi = phi[np.newaxis,:,:] # add axis along n dim
@@ -308,6 +313,72 @@ class HMM(object):
     
 class GLMHMM(HMM):
     
-    def __init__(self,n,d,c,k):
-        super().__init__(n,d,c,k):
+    def __init__(self,n,d,c,k,observations="bernoulli",hessian=False,gaussianPrior=0):
+        
+        super().__init__(n,d,c,k)
+        
+        self.hessian, self.gaussianPrior = hessian, gaussianPrior
+        
+        self.glm = glm.GLM(HMM.n,HMM.m,HMM.c,observations=observations)
+        
+    def generate_data(self,A,w):
+        '''
+
+        Parameters
+        ----------
+        A : kxk matrix of transition probabilities
+        phi : kxc or nxkxc matrix of emission probabilities
+
+        Returns
+        -------
+        y : nx1 vector of observations (the data)
+        z : nx1 vector of latent states
+
+        '''
+        
+        zi = np.random.choice(np.arange(0,len(A)))  # randomly select initial state
+        y = np.zeros(self.n) 
+        z = np.zeros(self.n)
+        phi = np.zeros(HMM.n,HMM.k,HMM.c)
+        
+        # generate inputs
+        x = np.random.randint(-10, high=10,size=(self.n,self.m)) # choose length random inputs between -10 and 10
+        
+        # generate observations and states using A and phi
+        for i in range(self.n):
+            z[i] = zi
+            
+            # compute phi from weights 
+            phi[:,zi,:] = self.glm.observations.compObs(x,w)
+
+            # select z_{i+1} using z_i and A
+            zi = np.random.choice(A.shape[0], p = A[zi, :])
+            
+            # generate y's using probabilities from chosen latent state at each time point
+            y[i] = np.random.choice(HMM.c, p = phi[:,zi,:])
+        
+        return y, z, x
+    
+            
+    def _updateObservations(self,y,x,w,gammas):
+        '''
+        Updates emissions probabilities as part of the M-step of the EM algorithm.
+        For stationary observations, see the HMM class
+        Uses gradient descent to find optimal update of weights
+        
+        Parameters
+        ----------
+        y : nx1 vector of observations
+        gammas : nxk matrix of the posterior probabilities of the latent states
+        
+        Returns
+        -------
+        kxc matrix of updated emissions probabilities
+
+        '''
+        
+        for zk in np.arange(HMM.k):
+            self.w[zk,:,:], self.phi[:,zk,:] = self.glm.fit(x,w[zk,:,:],y,compHess=self.hessian,gammas=gammas[:,zk],gaussianPrior=self.gaussianPrior)
+            
+            
         

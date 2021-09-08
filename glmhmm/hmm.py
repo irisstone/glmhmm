@@ -321,18 +321,23 @@ class GLMHMM(HMM):
         
         self.glm = glm.GLM(HMM.n,HMM.m,HMM.c,observations=observations)
         
+    def generate_params(self,):
+        
+        return A, w, pi
+        
     def generate_data(self,A,w):
         '''
 
         Parameters
         ----------
         A : kxk matrix of transition probabilities
-        phi : kxc or nxkxc matrix of emission probabilities
+        w : kxmxc matrix of eweights
 
         Returns
         -------
         y : nx1 vector of observations (the data)
         z : nx1 vector of latent states
+        x : nxm matrix of inputs
 
         '''
         

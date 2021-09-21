@@ -298,22 +298,61 @@ class HMM(object):
         return A, phi, pi0
 
     
-    def fit(self,y,A,phi,pi0=None,fit_init_states=False):
+    def fit(self,y,A,phi,pi0=None,fit_init_states=False,maxiter=250,tol=1e-3):
+        '''
+
+        Parameters
+        ----------
+        y : TYPE
+            DESCRIPTION.
+        A : TYPE
+            DESCRIPTION.
+        phi : TYPE
+            DESCRIPTION.
+        pi0 : TYPE, optional
+            DESCRIPTION. The default is None.
+        fit_init_states : TYPE, optional
+            DESCRIPTION. The default is False.
+        maxiter : TYPE, optional
+            DESCRIPTION. The default is 250.
+        tol : TYPE, optional
+            DESCRIPTION. The default is 1e-3.
+
+        Returns
+        -------
+        lls : TYPE
+            DESCRIPTION.
+        A : TYPE
+            DESCRIPTION.
+        phi : TYPE
+            DESCRIPTION.
+        pi0 : TYPE
+            DESCRIPTION.
+
+        '''
         
-        # E STEP
-        ll,alpha,cs = HMM.forwardPass(self,y,A,phi,pi0=pi0)
-        pBack,beta,zhatBack = HMM.backwardPass(self,y,A,phi,alpha,cs)
+        lls = np.nans(maxiter)
         
+        for n in range(maxiter):
+            # E STEP
+            ll,alpha,cs = HMM.forwardPass(self,y,A,phi,pi0=pi0)
+            pBack,beta,zhatBack = HMM.backwardPass(self,y,A,phi,alpha,cs)
+            
+            
+            # M STEP
+            A,phi,pi0 = HMM._updateParams(self,y,pBack,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
+            
+            # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
+            if len(phi.shape) == 2:
+                phi = phi[np.newaxis,:,:] # add axis along n dim
+                phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
+                
+                
+            lls[n] = lls
+            if  n > 0 and ll[n-1] + tol >= ll: # break early if tolerance is reached
+                break
         
-        # M STEP
-        A, phi,pi0 = HMM._updateParams(self,y,pBack,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
-        
-        # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
-        if len(phi.shape) == 2:
-            phi = phi[np.newaxis,:,:] # add axis along n dim
-            phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
-        
-        return
+        return lls,A,phi,pi0
     
 class GLMHMM(HMM):
     

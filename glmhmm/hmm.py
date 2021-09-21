@@ -298,11 +298,15 @@ class HMM(object):
         return A, phi, pi0
 
     
-    def fit(self, phi):
+    def fit(self,y,A,phi,pi0=None,fit_init_states=False):
         
         # E STEP
+        ll,alpha,cs = HMM.forwardPass(self,y,A,phi,pi0=pi0)
+        pBack,beta,zhatBack = HMM.backwardPass(self,y,A,phi,alpha,cs)
+        
         
         # M STEP
+        A, phi,pi0 = HMM._updateParams(self,y,pBack,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
         
         # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
         if len(phi.shape) == 2:

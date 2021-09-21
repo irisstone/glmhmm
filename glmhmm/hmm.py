@@ -12,7 +12,7 @@ Updated: Sep 1, 2020
 """
 
 import numpy as np
-from glmhmm.init_params import init_transitions, init_emissions, init_states
+from glmhmm.init_params import init_transitions, init_emissions, init_states, init_weights
 from glmhmm import glm
 
 class HMM(object):
@@ -321,7 +321,35 @@ class GLMHMM(HMM):
         
         self.glm = glm.GLM(HMM.n,HMM.m,HMM.c,observations=observations)
         
-    def generate_params(self,):
+    def generate_params(self,weights=['uniform',-1,1],transitions=['dirichlet',5,1],state_priors='uniform'):
+        
+        '''
+        Generates parameters A, w, and pi for a GLM-HMM. Can be used to generate true parameters for simulated data
+        or to initialize parameters for fitting. 
+        
+        Parameters
+        ----------
+        weights : list, optional
+            Contains the name of the desired distribution (string) and optionally the associated parameters. The default is ['uniform',-1,1].
+        transitions : list, optional
+            Contains the name of the desired distribution (string). The default is ['dirichlet',5,1].
+        state_priors : string, optional
+            Containts the name of the desired distribution (string). The default is None, or 'uniform'.
+
+        Returns
+        -------
+        A : kxk matrix of transition probabilities.
+        w : mxc matrix of weights.
+        pi : kx1 vector of state probabilities for t=1.
+
+        '''
+        
+        A = init_transitions(self,distribution=transitions[0],alpha_diag=transitions[1],alpha_full=transitions[2])
+        
+        # initialize using different distributions or by fitting to a GLM and adding noise
+        w = init_weights(self,distribution=weights[0],params=weights[1:-1],bias=weights[-1])
+        
+        pi = init_states(self,state_priors)
         
         return A, w, pi
         

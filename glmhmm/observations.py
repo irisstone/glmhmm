@@ -6,7 +6,8 @@ Created on Fri Aug 14 15:38:30 2020
 @author: istone
 """
 
-import autograd.numpy as np 
+#import autograd.numpy as jnp
+import jax.numpy as jnp
 
 class Observations(object):
     
@@ -37,9 +38,9 @@ class BernoulliObservations(object):
         
         assert self.c == 2, "A Bernoulli distribution must only have two observation classes (c=2)"
         
-        phi = np.exp(x@w) # get exponentials e^(wTx)
+        phi = jnp.exp(x@w) # get exponentials e^(wTx)
         if normalize:
-            phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+            phi = jnp.divide(phi.T,jnp.sum(phi,axis=1)).T # normalize the exponentials 
         
         return phi
     
@@ -67,8 +68,8 @@ class MultinomialObservations(object):
         
         assert self.c > 2, "A multinomial distribution should have more than two observation classes (c>2)"
         
-        phi = np.exp(x@w) # get exponentials e^(wTx)
+        phi = jnp.exp(x@w) # get exponentials e^(wTx)
         if normalize:
-            phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+            phi = jnp.divide(phi.T,jnp.sum(phi,axis=1)).T # normalize the exponentials 
         
         return phi

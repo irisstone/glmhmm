@@ -9,6 +9,7 @@ Functions for initializing the parameters of a hidden Markov Model (\theta = {A,
 Current supported distributions: Dirichlet, uniform. Also includes support for custom distributions. 
 """
 import numpy as np
+from glmhmm.glm import fit
 
 def init_transitions(self,distribution='dirichlet',alpha_diag=5,alpha_full=1):
     
@@ -97,3 +98,47 @@ def init_emissions(self,distribution='dirichlet',alpha_diag=5,alpha_full=1):
         phi = phi/(np.repeat(np.reshape(np.sum(phi,axis=1),(1,self.k)),self.c,0).T) # normalize so columns sum to 1
     
     return phi
+
+def init_weights(self,distribution='uniform',params=None,bias=True):
+    """
+    Initializes values for the weights 
+
+    Parameters
+    ----------
+    distribution : TYPE, optional
+        DESCRIPTION. The default is 'uniform'.
+    bias : TYPE, optional
+        DESCRIPTION. The default is True.
+
+    Returns
+    -------
+    w : mxc matrix of weights
+
+    """
+    
+    if distribution == 'uniform':
+    
+        w = np.random.uniform(params[0],high=params[1],size=(self.m,self.c-1))
+        self.w = np.hstack((np.zeros((self.m,1)),w)) # add vector of zeros to weights
+
+        
+    elif distribution == 'normal':
+        
+        w = np.random.normal(loc=params[0],scale=params[1],size=(self.m,self.c-1))
+        self.w = np.hstack((np.zeros((self.m,1)),w)) # add vector of zeros to weights
+        
+    elif distribution == 'GLM':
+        
+        w = np.random.uniform(params[0],high=params[1],size=(self.m,self.c-1))
+        w, phi = fit(self,params[2],w,params[3],compHess=False,gammas=None,gaussianPrior=0)
+        
+        noise = np.random.normal(loc=0,scale=1,size=w(self.m,self.c-1)) # create vector of noise to add to weights
+        noise = np.hstack((noise,np.zeros_like(noise))) # add vector of zeros to last column of weights
+        w = w + noise # add noise to weights 
+        
+    if bias:
+        
+        w[0,0:-1] = 1 # add bias to all except last column (which should stay all zeros)
+        
+    
+    return w

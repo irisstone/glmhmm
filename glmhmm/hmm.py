@@ -303,31 +303,20 @@ class HMM(object):
 
         Parameters
         ----------
-        y : TYPE
-            DESCRIPTION.
-        A : TYPE
-            DESCRIPTION.
-        phi : TYPE
-            DESCRIPTION.
-        pi0 : TYPE, optional
-            DESCRIPTION. The default is None.
-        fit_init_states : TYPE, optional
-            DESCRIPTION. The default is False.
-        maxiter : TYPE, optional
-            DESCRIPTION. The default is 250.
-        tol : TYPE, optional
-            DESCRIPTION. The default is 1e-3.
+        y : nx1 vector of observations
+        A : initial kxk matrix of transition probabilities
+        phi : initial kxc or nxkxc matrix of emission probabilities
+        pi0 : initial kx1 vector of state probabilities for t=1.
+        fit_init_states : boolean, determines if EM will including fitting pi
+        maxiter : int. The maximum number of iterations of EM to allow. The default is 250.
+        tol : float. The tolerance value for the loglikelihood to allow early stopping of EM. The default is 1e-3.
 
         Returns
         -------
-        lls : TYPE
-            DESCRIPTION.
-        A : TYPE
-            DESCRIPTION.
-        phi : TYPE
-            DESCRIPTION.
-        pi0 : TYPE
-            DESCRIPTION.
+        lls : vector of loglikelihoods for each step of EM, size maxiter 
+        A : fitted kxk matrix of transition probabilities
+        phi : fitted kxc or nxkxc matrix of emission probabilities
+        pi0 : fitted kx1 vector of state probabilities for t= (only different from initial value of fit_init_states=True)
 
         '''
         

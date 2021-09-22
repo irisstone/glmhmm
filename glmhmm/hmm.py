@@ -179,7 +179,7 @@ class HMM(object):
         
         # backward pass for remaining time bins
         for i in np.arange(self.n-2,-1,-1):
-            beta_prior = np.multiply(beta[i+1],phi[:,int(y[i+1])]) # propogate uncertainty backward
+            beta_prior = np.multiply(beta[i+1],phi[i,:,int(y[i+1])]) # propogate uncertainty backward
             beta[i] = (A@beta_prior)/cs[i+1]
             
         pBack = np.multiply(alpha,beta) # posterior after backward pass -> alpha_hat(z_n)*beta_hat(z_n)
@@ -320,7 +320,13 @@ class HMM(object):
 
         '''
         
-        lls = np.nans(maxiter)
+        lls = np.empty(maxiter)
+        lls[:] = np.nan
+        
+        # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
+        if len(phi.shape) == 2:
+            phi = phi[np.newaxis,:,:] # add axis along n dim
+            phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
         
         for n in range(maxiter):
             # E STEP
@@ -330,13 +336,8 @@ class HMM(object):
             
             # M STEP
             A,phi,pi0 = HMM._updateParams(self,y,pBack,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
-            
-            # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
-            if len(phi.shape) == 2:
-                phi = phi[np.newaxis,:,:] # add axis along n dim
-                phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
                 
-                
+            # CHECK FOR CONVERGENCE    
             lls[n] = lls
             if  n > 0 and ll[n-1] + tol >= ll: # break early if tolerance is reached
                 break

@@ -215,7 +215,7 @@ class HMM(object):
         # compute xis, the joint posterior distribution of two successive latent variables p(z_{t-1},z_t |Y,theta_old)
         xis = np.zeros((self.n-1,self.k,self.k))
         for i in np.arange(0,self.n-1):
-            beta_phi = beta[i+1,:] * phi[i,int(y[i+1]),:]
+            beta_phi = beta[i+1,:] * phi[i,:,int(y[i+1])]
             alpha_reshaped = np.reshape(alpha[i,:],(self.k,1))
             xis[i,:,:] = ((beta_phi * alpha_reshaped) * A)/cs[i+1]
         
@@ -288,14 +288,12 @@ class HMM(object):
         
         A = self._updateTransitions(y,alpha,beta,cs,A,phi)
             
-        phi = self._updateObservations(y)
+        phi = self._updateObservations(y,gammas).T
         
         if fit_init_states: 
-            pi0 = self._updateInitStates(gammas)
-        else:
-            pi0 = self.pi0
+            self.pi0 = self._updateInitStates(gammas)
         
-        return A, phi, pi0
+        return A, phi, self.pi0
 
     
     def fit(self,y,A,phi,pi0=None,fit_init_states=False,maxiter=250,tol=1e-3):
@@ -322,13 +320,17 @@ class HMM(object):
         
         lls = np.empty(maxiter)
         lls[:] = np.nan
-        
-        # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
-        if len(phi.shape) == 2:
-            phi = phi[np.newaxis,:,:] # add axis along n dim
-            phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
+            
+        # store variables
+        self.pi0 = pi0
         
         for n in range(maxiter):
+            
+            # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
+            if len(phi.shape) == 2:
+                phi = phi[np.newaxis,:,:] # add axis along n dim
+                phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
+            
             # E STEP
             ll,alpha,cs = HMM.forwardPass(self,y,A,phi,pi0=pi0)
             pBack,beta,zhatBack = HMM.backwardPass(self,y,A,phi,alpha,cs)
@@ -338,8 +340,8 @@ class HMM(object):
             A,phi,pi0 = HMM._updateParams(self,y,pBack,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
                 
             # CHECK FOR CONVERGENCE    
-            lls[n] = lls
-            if  n > 0 and ll[n-1] + tol >= ll: # break early if tolerance is reached
+            lls[n] = ll
+            if  n > 0 and lls[n-1] + tol >= ll: # break early if tolerance is reached
                 break
         
         return lls,A,phi,pi0

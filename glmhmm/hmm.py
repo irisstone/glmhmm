@@ -296,19 +296,20 @@ class HMM(object):
         return A, phi, self.pi0
 
     
-    def fit(self,y,A,phi,pi0=None,fit_init_states=False,maxiter=250,tol=1e-3):
+    def fit(self,y,A,phi,pi0=None,fit_init_states=False,maxiter=250,tol=1e-3,sess=None):
         '''
 
         Parameters
         ----------
-        y : nx1 vector of observations
+        y : nx1 vector of observations 
         A : initial kxk matrix of transition probabilities
         phi : initial kxc or nxkxc matrix of emission probabilities
         pi0 : initial kx1 vector of state probabilities for t=1.
         fit_init_states : boolean, determines if EM will including fitting pi
         maxiter : int. The maximum number of iterations of EM to allow. The default is 250.
         tol : float. The tolerance value for the loglikelihood to allow early stopping of EM. The default is 1e-3.
-
+        sessions : an optional vector of the first and last indices of different sessions in the data (for
+        separate computations of the E step; first and last entries should be 0 and n, respectively)                                                                                            
         Returns
         -------
         lls : vector of loglikelihoods for each step of EM, size maxiter 
@@ -324,6 +325,9 @@ class HMM(object):
         # store variables
         self.pi0 = pi0
         
+        if sess is None:
+            sess = np.array([0,self.n]) # equivalent to saying the entire data set has one session
+        
         for n in range(maxiter):
             
             # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
@@ -332,8 +336,24 @@ class HMM(object):
                 phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
             
             # E STEP
-            ll,alpha,cs = HMM.forwardPass(self,y,A,phi,pi0=pi0)
-            pBack,beta,zhatBack = HMM.backwardPass(self,y,A,phi,alpha,cs)
+            alpha = np.zeros((self.n,self.k))
+            beta = np.zeros_like(alpha)
+            cs = np.zeros((self.n))
+            pBack = np.zeros_like(alpha)
+            zhatBack = np.zeros_like(cs)
+            ll = 0
+            
+            for s in range(len(sess)-1): # compute E step separately over each session or day of data 
+                ll_s,alpha_s,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=pi0)
+                pBack_s,beta_s,zhatBack_s = HMM.backwardPass(self,y[sess[s]:sess[s+1]],A,phi,alpha_s,cs_s)
+                
+                ll += ll
+                alpha[sess[s]:sess[s+1]] = alpha_s
+                cs[sess[s]:sess[s+1]] = cs_s
+                pBack[sess[s]:sess[s+1]] = pBack_s
+                beta[sess[s]:sess[s+1]] = beta_s
+                zhatBack[sess[s]:sess[s+1]] = zhatBack_s
+                
             
             
             # M STEP

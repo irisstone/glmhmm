@@ -296,7 +296,7 @@ class HMM(object):
         return A, phi, self.pi0
 
     
-    def fit(self,y,A,phi,pi0=None,fit_init_states=False,maxiter=250,tol=1e-3,sess=None):
+    def fit(self,y,A,phi,pi0=None,fit_init_states=False,maxiter=250,tol=1e-3,sess=None, B=1):
         '''
 
         Parameters
@@ -309,7 +309,8 @@ class HMM(object):
         maxiter : int. The maximum number of iterations of EM to allow. The default is 250.
         tol : float. The tolerance value for the loglikelihood to allow early stopping of EM. The default is 1e-3.
         sessions : an optional vector of the first and last indices of different sessions in the data (for
-        separate computations of the E step; first and last entries should be 0 and n, respectively)                                                                                            
+        separate computations of the E step; first and last entries should be 0 and n, respectively)  
+        B : an optional temperature parameter used when fitting via direct annealing EM (DAEM; see Ueda and Nakano 1998)                                                                                         
         Returns
         -------
         lls : vector of loglikelihoods for each step of EM, size maxiter 
@@ -350,7 +351,7 @@ class HMM(object):
                 ll += ll
                 alpha[sess[s]:sess[s+1]] = alpha_s
                 cs[sess[s]:sess[s+1]] = cs_s
-                pBack[sess[s]:sess[s+1]] = pBack_s
+                pBack[sess[s]:sess[s+1]] = pBack_s ** B
                 beta[sess[s]:sess[s+1]] = beta_s
                 zhatBack[sess[s]:sess[s+1]] = zhatBack_s
                 

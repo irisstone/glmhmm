@@ -13,6 +13,8 @@ import numpy as np
 
 def permute_states(A):
     
+    'Permute states in order from highest to lowest self-transition value'
+    
     diags = np.diagonal(A) # get diagonal values for sorting
     
     order = np.flip(np.argsort(diags))
@@ -23,3 +25,7 @@ def permute_states(A):
             Aperm[i,j] = A[order[i],order[j]]
     
     return Aperm, order 
+
+def find_best_fit(lls):
+
+    return np.argmax(np.nanmax(lls,axis=1))

@@ -348,7 +348,7 @@ class HMM(object):
                 ll_s,alpha_s,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=pi0)
                 pBack_s,beta_s,zhatBack_s = HMM.backwardPass(self,y[sess[s]:sess[s+1]],A,phi,alpha_s,cs_s)
                 
-                ll += ll
+                ll += ll_s
                 alpha[sess[s]:sess[s+1]] = alpha_s
                 cs[sess[s]:sess[s+1]] = cs_s
                 pBack[sess[s]:sess[s+1]] = pBack_s ** B
@@ -356,6 +356,7 @@ class HMM(object):
                 zhatBack[sess[s]:sess[s+1]] = zhatBack_s
                 
             
+            lls[n] = ll
             
             # M STEP
             A,phi,pi0 = HMM._updateParams(self,y,pBack,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)

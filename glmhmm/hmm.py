@@ -381,7 +381,7 @@ class GLMHMM(HMM):
         
         self.glm = glm.GLM(self.n,self.d,self.c,observations=observations)
         
-    def generate_params(self,weights=['uniform',-1,1],transitions=['dirichlet',5,1],state_priors='uniform'):
+    def generate_params(self,weights=['uniform',-1,1,1],transitions=['dirichlet',5,1],state_priors='uniform'):
         
         '''
         Generates parameters A, w, and pi for a GLM-HMM. Can be used to generate true parameters for simulated data
@@ -390,7 +390,8 @@ class GLMHMM(HMM):
         Parameters
         ----------
         weights : list, optional
-            Contains the name of the desired distribution (string) and optionally the associated parameters. The default is ['uniform',-1,1].
+            Contains the name of the desired distribution (string) and optionally the associated parameters 
+            (see init_params.py script for details. The default is ['uniform',-1,1,1].
         transitions : list, optional
             Contains the name of the desired distribution (string). The default is ['dirichlet',5,1].
         state_priors : string, optional

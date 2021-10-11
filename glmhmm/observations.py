@@ -16,8 +16,8 @@ class Observations(object):
         
 class BernoulliObservations(object):
     
-    def __init__(self,n,m,c):
-        self.n, self.m, self.c = n, m, c
+    def __init__(self,n,d,c):
+        self.n, self.d, self.c = n, d, c
     
     def compObs(self,x,w,normalize=True):
         """
@@ -46,8 +46,8 @@ class BernoulliObservations(object):
     
 class MultinomialObservations(object):
     
-    def __init__(self,n,m,c):
-        self.n, self.m, self.c = n, m, c
+    def __init__(self,n,d,c):
+        self.n, self.d, self.c = n, d, c
     
     def compObs(self,x,w,normalize=True):
         """

@@ -110,10 +110,10 @@ def init_weights(self,distribution='uniform',params=None,bias=True):
 
     Parameters
     ----------
-    distribution : TYPE, optional
-        DESCRIPTION. The default is 'uniform'.
-    bias : TYPE, optional
-        DESCRIPTION. The default is True.
+    distribution : string, the distribution from which to generate weights. The default is 'uniform'.
+    params : list, any additional parameters required for generating the weights, e.g. the low and high bounds 
+    for a uniform distribution or the mean and standard deviation for a normal distribution. 
+    bias : boolean, specifies whether to add an offset to the weights. The default is True.
 
     Returns
     -------
@@ -123,14 +123,14 @@ def init_weights(self,distribution='uniform',params=None,bias=True):
     
     if distribution == 'uniform':
     
-        w = np.random.uniform(params[0],high=params[1],size=(self.m,self.c-1))
-        self.w = np.hstack((np.zeros((self.m,1)),w)) # add vector of zeros to weights
+        w = np.random.uniform(params[0],high=params[1],size=(self.d,self.c-1))
+        self.w = np.hstack((np.zeros((self.d,1)),w)) # add vector of zeros to weights
 
         
     elif distribution == 'normal':
         
-        w = np.random.normal(loc=params[0],scale=params[1],size=(self.m,self.c-1))
-        self.w = np.hstack((np.zeros((self.m,1)),w)) # add vector of zeros to weights
+        w = np.random.normal(loc=params[0],scale=params[1],size=(self.d,self.c-1))
+        self.w = np.hstack((np.zeros((self.d,1)),w)) # add vector of zeros to weights
         
     # elif distribution == 'GLM':
         

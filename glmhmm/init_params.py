@@ -96,6 +96,11 @@ def init_emissions(self,distribution='dirichlet',alpha_diag=5,alpha_full=1):
             pass
 
         phi = phi/(np.repeat(np.reshape(np.sum(phi,axis=1),(1,self.k)),self.c,0).T) # normalize so columns sum to 1
+        
+    elif distribution == 'uniform':
+        
+        # Make emission matrix probabilities uniform 
+        phi = (1/self.c) * np.ones((self.k,self.c))
     
     return phi
 

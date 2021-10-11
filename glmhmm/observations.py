@@ -11,8 +11,8 @@ import autograd.numpy as np
 
 class Observations(object):
     
-    def __init__(self,n,m,c):
-       self.n, self.m, self.c = n, m, c
+    def __init__(self,n,d,c):
+       self.n, self.d, self.c = n, d, c
         
 class BernoulliObservations(object):
     

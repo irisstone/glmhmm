@@ -62,6 +62,12 @@ def init_states(self,distribution='uniform'):
     
     if distribution == 'uniform':
         pi = (1/self.k) * np.ones((self.k,1))
+        
+    if distribution == 'normal':
+        pi = np.random.normal(loc=1,size=(self.k,1))
+        pi = pi/np.sum(pi) # normalize so values add up to 1
+        if np.any(pi) < 0:
+            pi = pi + abs(np.min(pi)) # threshold so smallest value is > 0
     
     return pi
 

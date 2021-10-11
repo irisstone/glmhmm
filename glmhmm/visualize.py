@@ -11,21 +11,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 
     
-def plot_transitions(A):
+def plot_model_params(M,ax):
     
     # plot heat map of transitions
-    fig, ax = plt.subplots()
-    plt.imshow(A,cmap='gray')
-    plt.xticks([])
-    plt.yticks([])
+    ax.imshow(M,cmap='gray')
+    ax.set_xticks([])
+    ax.set_yticks([])
     
     # add numerical values to plot
-    k = A.shape[0]
+    k = M.shape[0]
     for i in range(k):
         for j in range(k):
-            if i == j:
+            if M[i,j] >= 0.5:
                 color='black'
             else:
                 color='white'
 
-            plt.text((j+1)/(k)-(1/(k+1)),((k-i)/k)-(1/(k+2)),'%.2f' %(A[i,j]),transform=ax.transAxes,fontsize=15,color=color)
+            ax.text((j+1)/(k)-(1/(k+1)),((k-i)/k)-(1/(k+2)),'%.2f' %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)

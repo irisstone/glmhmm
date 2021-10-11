@@ -51,7 +51,7 @@ class HMM(object):
         Returns
         -------
         A : kxk matrix of transition probabilities.
-        phi : mxc matrix of emission probabilities.
+        phi : kxc matrix of emission probabilities.
         pi : kx1 vector of state probabilities for t=1.
 
         '''
@@ -66,7 +66,7 @@ class HMM(object):
     
 
         
-    def generate_data(self,A,phi):
+    def generate_data(self,A,phi,pi=None):
         '''
 
         Parameters
@@ -81,7 +81,10 @@ class HMM(object):
 
         '''
         
-        zi = np.random.choice(np.arange(0,len(A)))  # randomly select initial state
+        if pi:
+            zi = np.random.choice(np.arange(0,len(A)), p=pi)  # select initial state according to initial state probabilities
+        else:
+            zi = np.random.choice(np.arange(0,len(A)))  # randomly select initial state
         y = np.zeros(self.n) 
         z = np.zeros(self.n)
         

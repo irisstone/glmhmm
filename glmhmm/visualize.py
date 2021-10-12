@@ -19,12 +19,16 @@ def plot_model_params(M,ax):
     ax.set_yticks([])
     
     # add numerical values to plot
-    k = M.shape[0]
-    for i in range(k):
-        for j in range(k):
+    I = M.shape[0]
+    J = M.shape[1]
+    for i in range(I):
+        for j in range(J):
             if M[i,j] >= 0.5:
                 color='black'
             else:
                 color='white'
 
-            ax.text((j+1)/(k)-(1/(k+1)),((k-i)/k)-(1/(k+2)),'%.2f' %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
+            if J > 1:
+                ax.text((j+1)/(J)-(1/(J+1)),((I-i)/I)-(1/(I+2)),'%.2f' %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
+            else:
+                ax.text(0.3,((I-i)/I)-(1/(I+2)),'%.2f' %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)

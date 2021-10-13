@@ -12,8 +12,7 @@ Updated: Sep 1, 2020
 """
 
 import numpy as np
-from glmhmm.init_params import init_transitions, init_emissions, init_states, init_weights
-from glmhmm import glm
+from glmhmm.init_params import init_transitions, init_emissions, init_states
 
 class HMM(object):
 
@@ -66,7 +65,7 @@ class HMM(object):
     
 
         
-    def generate_data(self,A,phi,pi=None):
+    def generate_data(self,A,phi,pi0=None):
         '''
 
         Parameters
@@ -81,8 +80,8 @@ class HMM(object):
 
         '''
         
-        if pi:
-            zi = np.random.choice(np.arange(0,len(A)), p=pi)  # select initial state according to initial state probabilities
+        if pi0 is not None:
+            zi = np.random.choice(np.arange(0,len(A)), p=pi0)  # select initial state according to initial state probabilities
         else:
             zi = np.random.choice(np.arange(0,len(A)))  # randomly select initial state
         y = np.zeros(self.n) 
@@ -100,10 +99,6 @@ class HMM(object):
         
         return y, z
 
-    
-    def neglogli(self):
-        
-        return
         
     def forwardPass(self,y,A,phi,pi0=None):
         
@@ -371,108 +366,3 @@ class HMM(object):
         
         return lls,A,phi,pi0
     
-class GLMHMM(HMM):
-    
-    def __init__(self,n,d,c,k,observations="bernoulli",hessian=False,gaussianPrior=0):
-        
-        super().__init__(n,d,c,k)
-        
-        self.hessian, self.gaussianPrior = hessian, gaussianPrior
-        
-        self.glm = glm.GLM(self.n,self.d,self.c,observations=observations)
-        
-    def generate_params(self,weights=['uniform',-1,1,1],transitions=['dirichlet',5,1],state_priors='uniform'):
-        
-        '''
-        Generates parameters A, w, and pi for a GLM-HMM. Can be used to generate true parameters for simulated data
-        or to initialize parameters for fitting. 
-        
-        Parameters
-        ----------
-        weights : list, optional
-            Contains the name of the desired distribution (string) and optionally the associated parameters 
-            (see init_params.py script for details. The default is ['uniform',-1,1,1].
-        transitions : list, optional
-            Contains the name of the desired distribution (string). The default is ['dirichlet',5,1].
-        state_priors : string, optional
-            Containts the name of the desired distribution (string). The default is None, or 'uniform'.
-
-        Returns
-        -------
-        A : kxk matrix of transition probabilities.
-        w : mxc matrix of weights.
-        pi : kx1 vector of state probabilities for t=1.
-
-        '''
-        
-        A = init_transitions(self,distribution=transitions[0],alpha_diag=transitions[1],alpha_full=transitions[2])
-        
-        # initialize using different distributions or by fitting to a GLM and adding noise
-        w = init_weights(self,distribution=weights[0],params=weights[1:-1],bias=weights[-1])
-        
-        pi = init_states(self,state_priors)
-        
-        return A, w, pi
-        
-    def generate_data(self,A,w):
-        '''
-
-        Parameters
-        ----------
-        A : kxk matrix of transition probabilities
-        w : kxmxc matrix of eweights
-
-        Returns
-        -------
-        y : nx1 vector of observations (the data)
-        z : nx1 vector of latent states
-        x : nxm matrix of inputs
-
-        '''
-        
-        zi = np.random.choice(np.arange(0,len(A)))  # randomly select initial state
-        y = np.zeros(self.n) 
-        z = np.zeros(self.n)
-        phi = np.zeros(HMM.n,HMM.k,HMM.c)
-        
-        # generate inputs
-        x = np.random.randint(-10, high=10,size=(self.n,self.m)) # choose length random inputs between -10 and 10
-        
-        # generate observations and states using A and phi
-        for i in range(self.n):
-            z[i] = zi
-            
-            # compute phi from weights 
-            phi[:,zi,:] = self.glm.observations.compObs(x,w)
-
-            # select z_{i+1} using z_i and A
-            zi = np.random.choice(A.shape[0], p = A[zi, :])
-            
-            # generate y's using probabilities from chosen latent state at each time point
-            y[i] = np.random.choice(HMM.c, p = phi[:,zi,:])
-        
-        return y, z, x
-    
-            
-    def _updateObservations(self,y,x,w,gammas):
-        '''
-        Updates emissions probabilities as part of the M-step of the EM algorithm.
-        For stationary observations, see the HMM class
-        Uses gradient descent to find optimal update of weights
-        
-        Parameters
-        ----------
-        y : nx1 vector of observations
-        gammas : nxk matrix of the posterior probabilities of the latent states
-        
-        Returns
-        -------
-        kxc matrix of updated emissions probabilities
-
-        '''
-        
-        for zk in np.arange(HMM.k):
-            self.w[zk,:,:], self.phi[:,zk,:] = self.glm.fit(x,w[zk,:,:],y,compHess=self.hessian,gammas=gammas[:,zk],gaussianPrior=self.gaussianPrior)
-            
-            
-        

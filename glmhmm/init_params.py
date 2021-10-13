@@ -64,7 +64,7 @@ def init_states(self,distribution='uniform'):
         pi = (1/self.k) * np.ones((self.k,1))
         
     if distribution == 'normal':
-        pi = np.random.normal(loc=1,size=(self.k,1))
+        pi = np.random.normal(loc=2,size=(self.k,1))
         pi = pi/np.sum(pi) # normalize so values add up to 1
         if np.any(pi) < 0:
             pi = pi + abs(np.min(pi)) # threshold so smallest value is > 0
@@ -128,15 +128,28 @@ def init_weights(self,distribution='uniform',params=None,bias=True):
     """
     
     if distribution == 'uniform':
+        
+        try: self.k
+        except NameError:
+            # if number of states doesn't exist, initialize dxc weights
+            w = np.random.uniform(params[0],high=params[1],size=(self.d,self.c-1))
+            self.w = np.hstack((np.zeros((self.d,1)),w)) # add vector of zeros to weights
+        else:
+            # if number of states does exist, initialize kxdxc weights
+            w = np.random.uniform(params[0],high=params[1],size=(self.k,self.d,self.c-1))
+            self.w = np.concatenate((np.zeros((self.k,self.d,1)),w),axis=2) # add vector of zeros to weights
     
-        w = np.random.uniform(params[0],high=params[1],size=(self.d,self.c-1))
-        self.w = np.hstack((np.zeros((self.d,1)),w)) # add vector of zeros to weights
+
 
         
     elif distribution == 'normal':
-        
-        w = np.random.normal(loc=params[0],scale=params[1],size=(self.d,self.c-1))
-        self.w = np.hstack((np.zeros((self.d,1)),w)) # add vector of zeros to weights
+        try: self.k
+        except NameError:
+            w = np.random.normal(loc=params[0],scale=params[1],size=(self.d,self.c-1))
+            self.w = np.hstack((np.zeros((self.d,1)),w)) # add vector of zeros to weights
+        else:
+            w = np.random.normal(loc=params[0],scale=params[1],size=(self.k,self.d,self.c-1))
+            self.w = np.concatenate((np.zeros((self.k,self.d,1)),w),axis=2) # add vector of zeros to weights
         
     # elif distribution == 'GLM':
         
@@ -152,4 +165,4 @@ def init_weights(self,distribution='uniform',params=None,bias=True):
         w[0,0:-1] = 1 # add bias to all except last column (which should stay all zeros)
         
     
-    return w
+    return self.w

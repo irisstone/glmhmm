@@ -177,7 +177,7 @@ class HMM(object):
         
         # backward pass for remaining time bins
         for i in np.arange(self.n-2,-1,-1):
-            beta_prior = np.multiply(beta[i+1],phi[i,:,int(y[i+1])]) # propogate uncertainty backward
+            beta_prior = np.multiply(beta[i+1],phi[i+1,:,int(y[i+1])]) # propogate uncertainty backward
             beta[i] = (A@beta_prior)/cs[i+1]
             
         pBack = np.multiply(alpha,beta) # posterior after backward pass -> alpha_hat(z_n)*beta_hat(z_n)
@@ -344,7 +344,7 @@ class HMM(object):
             ll = 0
             
             for s in range(len(sess)-1): # compute E step separately over each session or day of data 
-                ll_s,alpha_s,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=self.pi0)
+                ll_s,alpha_s,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=pi0)
                 pBack_s,beta_s,zhatBack_s = HMM.backwardPass(self,y[sess[s]:sess[s+1]],A,phi,alpha_s,cs_s)
                 
                 ll += ll_s

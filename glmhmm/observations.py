@@ -70,6 +70,11 @@ class MultinomialObservations(object):
         
         phi = np.exp(x@w) # get exponentials e^(wTx)
         if normalize:
-            phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+            if len(phi.shape) == 2:
+                phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+                assert np.round(np.sum(phi,axis=1),5) == 1, "emission probabilities don't sum to 1!"
+            if len(phi.shape) == 1:
+                phi = np.divide(phi.T,np.sum(phi)).T # normalize the exponentials 
+                assert np.round(np.sum(phi),5) == 1, "emission probabilities don't sum to 1!"
         
         return phi

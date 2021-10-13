@@ -81,7 +81,7 @@ class HMM(object):
         '''
         
         if pi0 is not None:
-            zi = np.random.choice(np.arange(0,len(A)), p=pi0)  # select initial state according to initial state probabilities
+            zi = np.random.choice(np.arange(0,len(A)), p=np.squeeze(pi0))  # select initial state according to initial state probabilities
         else:
             zi = np.random.choice(np.arange(0,len(A)))  # randomly select initial state
         y = np.zeros(self.n) 
@@ -261,6 +261,7 @@ class HMM(object):
 
         '''
         
+        
         return np.divide(gammas[0],sum(gammas[0])) # new initial latent state probabilities
     
     def _updateParams(self,y,gammas,beta,alpha,cs,A,phi,fit_init_states = False):
@@ -343,7 +344,7 @@ class HMM(object):
             ll = 0
             
             for s in range(len(sess)-1): # compute E step separately over each session or day of data 
-                ll_s,alpha_s,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=pi0)
+                ll_s,alpha_s,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=self.pi0)
                 pBack_s,beta_s,zhatBack_s = HMM.backwardPass(self,y[sess[s]:sess[s+1]],A,phi,alpha_s,cs_s)
                 
                 ll += ll_s

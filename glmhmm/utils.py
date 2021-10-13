@@ -62,6 +62,10 @@ def permute_states(M,method='self-transitions',param='transitions',order=None):
             M_perm = np.zeros_like(M)
             for i in range(M.shape[0]):
                 M_perm[i,:] = M[order[i],:]
+        if param=='weights':
+            M_perm = np.zeros_like(M)
+            for i in range(M.shape[0]):
+                M_perm[i,:,:] = M[order[i],:,:]
     
     return M_perm, order 
 

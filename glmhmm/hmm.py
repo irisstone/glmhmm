@@ -119,8 +119,8 @@ class HMM(object):
 
         '''
         
-        alpha = np.zeros((self.n,self.k)) # forward probabilities p(z_t | x_1:t)
-        cs = np.zeros(self.n) # forward marginal likelihoods
+        alpha = np.zeros((y.shape[0],self.k)) # forward probabilities p(z_t | x_1:t)
+        cs = np.zeros(y.shape[0]) # forward marginal likelihoods
         
         # if not fitting initial state probabilities, initialize to ones
         if not np.any(pi0):
@@ -128,7 +128,7 @@ class HMM(object):
             
         # if phi is 2d, add a time/trial axis (repeats matrix n times for stationary transitions)
         if len(phi.shape) == 2:
-            phir = np.broadcast_to(phi, (self.n, self.k, self.c))
+            phir = np.broadcast_to(phi, (y.shape[0], self.k, self.c))
         elif len(phi.shape) == 3:
             phir = phi
         
@@ -138,7 +138,7 @@ class HMM(object):
         alpha[0] = pxz/cs[0] # conditional p(z_1 | x_1)
     
         # forward pass for remaining time bins
-        for i in np.arange(1,self.n):
+        for i in np.arange(1,y.shape[0]):
             alpha_prior = alpha[i-1]@A # propogate uncertainty forward
             pxz = np.multiply(phir[i,:,int(y[i])],alpha_prior) # joint P(y_1:t,z_t)
             cs[i] = np.sum(pxz) # conditional p(y_t | y_1:t-1)
@@ -170,13 +170,13 @@ class HMM(object):
 
         '''
         
-        beta = np.zeros((self.n,self.k))
+        beta = np.zeros((y.shape[0],self.k))
         
         # last time bin
         beta[-1] = 1 # take beta(z_N) = 1
         
         # backward pass for remaining time bins
-        for i in np.arange(self.n-2,-1,-1):
+        for i in np.arange(y.shape[0]-2,-1,-1):
             beta_prior = np.multiply(beta[i+1],phi[i+1,:,int(y[i+1])]) # propogate uncertainty backward
             beta[i] = (A@beta_prior)/cs[i+1]
             

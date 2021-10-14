@@ -40,7 +40,10 @@ class BernoulliObservations(object):
         
         phi = np.exp(x@w) # get exponentials e^(wTx)
         if normalize:
-            phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+            try:
+                phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+            except:
+                phi = np.divide(phi.T,np.sum(phi)).T # normalize the exponentials 
         
         return phi
     

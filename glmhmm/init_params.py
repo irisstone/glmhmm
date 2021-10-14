@@ -136,7 +136,7 @@ def init_weights(self,distribution='uniform',params=None,bias=True):
             self.w = np.hstack((np.zeros((self.d,1)),w)) # add vector of zeros to weights
         else:
             # if number of states does exist, initialize kxdxc weights
-            w = np.random.uniform(params[0],high=params[1],size=(self.k,self.d,self.c-1))
+            w = np.round(np.random.uniform(params[0],high=params[1],size=(self.k,self.d,self.c-1)),2)
             self.w = np.concatenate((np.zeros((self.k,self.d,1)),w),axis=2) # add vector of zeros to weights
     
 

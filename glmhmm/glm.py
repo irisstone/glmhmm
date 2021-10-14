@@ -98,8 +98,8 @@ class GLM(object):
         """
         
         ## generate weights
-        w = self.init_weights(wdist=wdist)
-        
+        w = np.round(self.init_weights(wdist=wdist),2)
+
         ## generate data
         x = np.random.uniform(xdist[0], high=xdist[1],size=(self.n,self.d)) # choose length random inputs between -10 and 10
         
@@ -155,7 +155,7 @@ class GLM(object):
         if gammas is not None:
             log_pyx = np.multiply(gammas,log_pyx) # apply weighting factor to loglikelihood
         
-        self.ll = np.round(np.sum(log_pyx),16) # np.round ensures value is stored as float and not ArrayBox
+        self.ll = np.round(np.sum(log_pyx),30) # np.round ensures value is stored as float and not ArrayBox
         
         return -np.sum(log_pyx) + (((1*gaussianPrior)**2)/2 * np.sum(w ** 2))
     

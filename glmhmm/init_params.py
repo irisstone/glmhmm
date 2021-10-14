@@ -5,8 +5,8 @@ Created on Mon Sep 14 12:11:13 2020
 
 @author: istone
 
-Functions for initializing the parameters of a hidden Markov Model (\theta = {A,\phi,\pi}) using different distributions. 
-Current supported distributions: Dirichlet, uniform. Also includes support for custom distributions. 
+Functions for initializing the parameters of a hidden Markov Model (\theta = {A,\phi,\pi}) or GLM-HMM (\theta = {A,w,\pi})
+using different distributions. Can easily be extended to include support for custom distributions. 
 """
 import numpy as np
 #from glmhmm import glm
@@ -166,7 +166,7 @@ def init_weights(self,distribution='uniform',params=None,bias=True):
             noise = np.hstack((np.zeros_like(noise),noise)) # add vector of zeros to last column of weights
             wk[zi,:,:] = w + noise # add noise to weights 
             
-        wk[:,0,1] = 0 # add zero bias weight
+        wk[:,0,1] = 1 # add uniform bias weight
             
         self.w = wk
         

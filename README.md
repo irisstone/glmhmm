@@ -4,19 +4,23 @@ This package provides flexible code for fitting Generalized Linear Models (GLMs)
 ### Package Contents
 
 #### glmhmm
-glm.py: GLM class fitting code
-hmm.py: HMM class fitting code
-glm-hmm.py: GLM-HMM class fitting code
-init_params.py: a script for defining initialization options for different model parameters
-observations.py: a script for defining distribution options for GLM observations
-utils.py: a script containing miscellaneous helper functions (still being updated)
-visualize.py: a script containing plotting and post-fitting analysis functions (still being updated)
+<li>
+  <ol>glm.py: GLM class fitting code</ol>
+  <ol>hmm.py: HMM class fitting code</ol>
+  <ol>glm-hmm.py: GLM-HMM class fitting code</ol>
+  <ol>init_params.py: a script for defining initialization options for different model parameters</ol>
+  <ol>observations.py: a script for defining distribution options for GLM observations</ol>
+  <ol>utils.py: a script containing miscellaneous helper functions (still being updated)</ol>
+  <ol>visualize.py: a script containing plotting and post-fitting analysis functions (still being updated)</ol>
+</li>
 
 #### examples
-fit-glm.ipynb: a simple example of fitting a GLM to simulated data
-fit-hmm.ipynb: a simple example of fitting an HMM to simulated data
-fit-hmm-DAEM.ipynb: an example illustrating the benefits of deterministic annealing EM (DAEM), with a comparison to traditional EM
-fit-glm-hmm.ipynb: two examples of fitting GLM-HMMs, one to simulated data and one to real data, and in the latter case recreating some of the plots shown in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)). 
+<li>
+  <ol>fit-glm.ipynb: a simple example of fitting a GLM to simulated data</ol>
+  <ol>fit-hmm.ipynb: a simple example of fitting an HMM to simulated data</ol>
+  <ol>fit-hmm-DAEM.ipynb: an example illustrating the benefits of deterministic annealing EM (DAEM), with a comparison to traditional EM</ol>
+  <ol>fit-glm-hmm.ipynb: two examples of fitting GLM-HMMs, one to simulated data and one to real data, and in the latter case recreating some of the plots shown in [Bolkan,    Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)) </ol>
+</li>
 
 #### data
 The data folder includes pre-formatted design matrices and choice behavior for fitting the three mouse data sets described in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)). 

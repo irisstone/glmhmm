@@ -72,7 +72,7 @@ def permute_states(M,method='self-transitions',param='transitions',order=None,ix
         if ix is None:
             raise Exception("Index of weight ix must be specified for this method")
         
-        order = np.argsort(M[:,ix])
+        order = np.flip(np.argsort(M[:,ix]))
         
         M_perm = np.zeros_like(M)
         for i in range(M.shape[0]):

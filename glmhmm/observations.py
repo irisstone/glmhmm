@@ -4,6 +4,8 @@
 Created on Fri Aug 14 15:38:30 2020
 
 @author: istone
+
+Defines different distribution options for GLM observations.
 """
 
 import autograd.numpy as np

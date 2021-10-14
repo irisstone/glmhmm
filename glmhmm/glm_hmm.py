@@ -7,6 +7,8 @@ Created on Tue Oct 12 20:50:03 2021
 """
 
 import numpy as np
+import autograd.numpy as npa
+from autograd import hessian
 from glmhmm.hmm import HMM
 from glmhmm.init_params import init_transitions, init_states, init_weights
 from glmhmm import glm
@@ -191,12 +193,6 @@ class GLMHMM(HMM):
             for zi in range(self.k):
                 phi[i,zi,:] = self.glm.observations.compObs(x[i,:],w[zi,:,:])
         
-        # if emissions matrix is kxc (not input driven), add dimension along n for consistency in later code
-        # phi = np.array([[0.19292068, 0.80707932],[0.95734311, 0.04265689]])
-        # if len(phi.shape) == 2:
-        #     phi = phi[np.newaxis,:,:] # add axis along n dim
-        #     phi = np.tile(phi, (self.n,1,1)) # stack matrix n times
-        
         if sess is None:
             sess = np.array([0,self.n]) # equivalent to saying the entire data set has one session
         
@@ -231,7 +227,66 @@ class GLMHMM(HMM):
             
             # CHECK FOR CONVERGENCE    
             lls[n] = ll
-            if  n > 0 and lls[n-1] + tol >= ll: # break early if tolerance is reached
+            if  n > 5 and lls[n-5] + tol >= ll: # break early if tolerance is reached
                 break
         
         return lls,A,w,pi0
+    
+    def computeVariance(self,x,y,A,w,gaussPrior=0):
+
+       def logLikelihood(params_flat,y,x):
+    
+           # unflatten A
+           A = params_flat[0:self.k*(self.k-1)]
+           A = npa.reshape(A,(self.k,self.k-1)) # reshape A vector into s x s-1 matrix
+           A_last = 1 - npa.sum(A,axis=1).reshape(self.k,1) # calculate values of last column of A (1 - sum of other row values)
+           A = npa.hstack((A,A_last)) # append new column to transition matrix
+    
+           # runflatten W
+           w = params_flat[int(self.k * (self.k-1)):]
+           w = npa.reshape(w,(self.k,self.d,self.c-1))
+    
+           phi = [] # must use list appending because autograd numpy doesn't support indexing
+    
+           for s in range(self.k):
+               w_new = npa.reshape(w[self.k,:,:],(self.d,self.c-1))
+               p = npa.exp(x@w_new) # get exponentials e^wTx
+               norm = npa.sum(npa.hstack((p,npa.ones((len(p),1)))),axis=1) # get normalization constant (sum of exponentials)
+               phi.append(npa.divide(p.T,norm).T) # normalize the exponentials
+    
+           phi = npa.array(phi)
+              
+           aa = [] # forward probabilities p(z_t | x_1:t)
+           cs = [] # forward marginal likelihoods
+    
+           # first time bin
+           pxz = phi[:,0,int(y[0])]
+           cs.append(npa.sum(pxz)) # normalizer
+           aa.append(pxz/cs[0]) # conditional p(z_1 | x_1)
+    
+           # forward pass for remaining time bins
+           for i in npa.arange(1,self.n):
+               aaprior = npa.dot(aa[i-1],A) # propogate uncertainty forward
+               pxz = npa.multiply(phi[:,i,int(y[i])],aaprior) # joint P(x_1:t,z_t)
+               cs.append(npa.sum(pxz)) # conditional p(x_t | x_1:t-1)
+               aa.append(pxz/cs[i]) # conditional p(z_t | x_1:t)
+    
+           cs = npa.array(cs)
+    
+           return -npa.sum(npa.log(cs)) + (1/(2*(gaussPrior**2)) * sum(w ** 2))
+
+       # vectorize parameters
+       A_flat = A[:,0:self.k-1].flatten(order='C') # flattens column-wise ([first row, second row, third row,...])
+       w_flat = w.flatten(order='C')
+       params_flat = np.hstack((A_flat,w_flat))
+    
+       # create lambda function specializing parameter(s) to take derivative with respect to
+       opt_log = lambda params_flat: logLikelihood(params_flat,y,x)
+    
+       hess = hessian(opt_log) # function that computes the hessian
+       H = hess(params_flat) # get hessian matrix
+    
+       ## calculate variance of parameters from Hessian
+       variance = np.sqrt(np.diag(np.linalg.inv(H)))
+       
+       return variance

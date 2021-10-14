@@ -163,8 +163,10 @@ def init_weights(self,distribution='uniform',params=None,bias=True):
         wk = np.zeros((self.k,self.d,self.c))
         for zi in range(self.k):
             noise = np.random.normal(loc=0,scale=1,size=(self.d,self.c-1)) # create vector of noise to add to weights
-            noise = np.hstack((noise,np.zeros_like(noise))) # add vector of zeros to last column of weights
+            noise = np.hstack((np.zeros_like(noise),noise)) # add vector of zeros to last column of weights
             wk[zi,:,:] = w + noise # add noise to weights 
+            
+        wk[:,0,1] = 0 # add zero bias weight
             
         self.w = wk
         

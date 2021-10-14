@@ -62,7 +62,7 @@ class GLMHMM(HMM):
         Parameters
         ----------
         A : kxk matrix of transition probabilities
-        w : kxdxc matrix of eweights
+        w : kxdxc matrix of weights
 
         Returns
         -------
@@ -233,8 +233,26 @@ class GLMHMM(HMM):
         return lls,A,w,pi0
     
     def computeVariance(self,x,y,A,w,gaussPrior=0):
+        
+        '''
+        Compute the variance for the fitted parameters A and w of a GLM-HMM
+        
+        Parameters
+        ----------
+        x : nxd matrix of inputs
+        y : nx1 vector of observations
+        A : fitted kxk matrix of transition probabilities
+        w : fitted kxdxc omatrix of weights
+        gaussPrior : integer specifying the sigma of a desired Gaussian prior on the loss to penalize large
+        weight values. The default is 0 which corresponds to no prior.
 
-       def logLikelihood(params_flat,y,x):
+        Returns
+        -------
+        variance : a vector containing the variances for the fitted parameters A and w
+
+        '''
+
+        def logLikelihood(params_flat,y,x):
     
            # unflatten A
            A = params_flat[0:self.k*(self.k-1)]
@@ -275,18 +293,18 @@ class GLMHMM(HMM):
     
            return -npa.sum(npa.log(cs)) + (1/(2*(gaussPrior**2)) * sum(w ** 2))
 
-       # vectorize parameters
-       A_flat = A[:,0:self.k-1].flatten(order='C') # flattens column-wise ([first row, second row, third row,...])
-       w_flat = w.flatten(order='C')
-       params_flat = np.hstack((A_flat,w_flat))
+        # vectorize parameters
+        A_flat = A[:,0:self.k-1].flatten(order='C') # flattens column-wise ([first row, second row, third row,...])
+        w_flat = w.flatten(order='C')
+        params_flat = np.hstack((A_flat,w_flat))
     
-       # create lambda function specializing parameter(s) to take derivative with respect to
-       opt_log = lambda params_flat: logLikelihood(params_flat,y,x)
+        # create lambda function specializing parameter(s) to take derivative with respect to
+        opt_log = lambda params_flat: logLikelihood(params_flat,y,x)
     
-       hess = hessian(opt_log) # function that computes the hessian
-       H = hess(params_flat) # get hessian matrix
+        hess = hessian(opt_log) # function that computes the hessian
+        H = hess(params_flat) # get hessian matrix
     
-       ## calculate variance of parameters from Hessian
-       variance = np.sqrt(np.diag(np.linalg.inv(H)))
+        ## calculate variance of parameters from Hessian
+        variance = np.sqrt(np.diag(np.linalg.inv(H)))
        
-       return variance
+        return variance

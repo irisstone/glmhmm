@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from glmhmm.utils import find_best_fit
     
-def plot_model_params(M,ax):
+def plot_model_params(M,ax,precision='%.2f'):
     
     # plot heat map of transitions
     ax.imshow(M,cmap='gray')
@@ -29,9 +29,9 @@ def plot_model_params(M,ax):
                 color='white'
 
             if J > 1:
-                ax.text((j+1)/(J)-(1/(J+1)),((I-i)/I)-(1/(I+2)),'%.2f' %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
+                ax.text((j+1)/(J)-(1/(J+1)),((I-i)/I)-(1/(I+2)),precision %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
             else:
-                ax.text(0.3,((I-i)/I)-(1/(I+2)),'%.2f' %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
+                ax.text(0.3,((I-i)/I)-(1/(I+2)),precision %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
 
 def plot_loglikelihoods(lls,maxdiff,startix=5):
     '''
@@ -60,8 +60,23 @@ def plot_loglikelihoods(lls,maxdiff,startix=5):
     return np.where(ll_diffs < maxdiff)[0] # return indices of best (matching) fits
 
 
-def plot_weights(w,ax,xlabels=None,colors=None):
+def plot_weights(w,ax,xlabels=None,color=None,style='-',label='',switch=False):
     
-    plt.plot()
+    if switch:
+        w = np.insert(w,3,w[:,0],axis=1)
+        w = np.delete(w,0,axis=1)
+        
+    ax.plot(xlabels,np.zeros((len(xlabels),1)),'k--')
+    
+    if color is not None:
+        for i in range(w.shape[0]):
+            ax.plot(w[i,:],style,color=color[i],label=label,linewidth=2)
+    else:
+        ax.plot(w.T,style,label=label)
+    ax.set_ylabel('weight')
+    if xlabels:
+        ax.set_xticks(np.arange(0,len(xlabels)))
+        ax.set_xticklabels(xlabels,rotation=90)
+        
     
     

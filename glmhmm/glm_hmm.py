@@ -260,7 +260,7 @@ class GLMHMM(HMM):
            A_last = 1 - npa.sum(A,axis=1).reshape(self.k,1) # calculate values of last column of A (1 - sum of other row values)
            A = npa.hstack((A,A_last)) # append new column to transition matrix
     
-           # runflatten W
+           # unflatten W
            w = params_flat[int(self.k * (self.k-1)):]
            w = npa.reshape(w,(self.k,self.d,self.c-1))
     

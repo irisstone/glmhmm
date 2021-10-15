@@ -266,10 +266,11 @@ class GLMHMM(HMM):
     
            phi = [] # must use list appending because autograd numpy doesn't support indexing
     
-           for s in range(self.k):
-               w_new = npa.reshape(w[self.k,:,:],(self.d,self.c-1))
+           for zi in range(self.k):
+               w_new = npa.reshape(w[zi,:,:],(self.d,self.c-1))
                p = npa.exp(x@w_new) # get exponentials e^wTx
-               norm = npa.sum(npa.hstack((p,npa.ones((len(p),1)))),axis=1) # get normalization constant (sum of exponentials)
+               p = npa.hstack((p,npa.ones((len(p),1))))
+               norm = npa.sum(p,axis=1) # get normalization constant (sum of exponentials)
                phi.append(npa.divide(p.T,norm).T) # normalize the exponentials
     
            phi = npa.array(phi)
@@ -291,7 +292,7 @@ class GLMHMM(HMM):
     
            cs = npa.array(cs)
     
-           return -npa.sum(npa.log(cs)) + (1/(2*(gaussPrior**2)) * sum(w ** 2))
+           return -npa.sum(npa.log(cs)) + ((1/(2*(gaussPrior**2)) * npa.sum(w ** 2)))
 
         # vectorize parameters
         A_flat = A[:,0:self.k-1].flatten(order='C') # flattens column-wise ([first row, second row, third row,...])

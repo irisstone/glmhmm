@@ -60,21 +60,29 @@ def plot_loglikelihoods(lls,maxdiff,startix=5):
     return np.where(ll_diffs < maxdiff)[0] # return indices of best (matching) fits
 
 
-def plot_weights(w,ax,xlabels=None,color=None,style='-',label='',switch=False):
+def plot_weights(w,ax,xlabels=None,color=None,style='-',label=[''],switch=False, error=None):
     
     if switch:
         w = np.insert(w,3,w[:,0],axis=1)
         w = np.delete(w,0,axis=1)
-        
-    ax.plot(xlabels,np.zeros((len(xlabels),1)),'k--')
     
     if color is not None:
-        for i in range(w.shape[0]):
-            ax.plot(w[i,:],style,color=color[i],label=label,linewidth=2)
+        if error is not None:
+            error = error[(w.shape[0])*(w.shape[0]-1):]
+            error = np.reshape(error,(w.shape[0],w.shape[1]))
+            for i in range(w.shape[0]):
+                ax.errorbar(np.arange(w[i,:].shape[0]),w[i,:],yerr=error[i,:],fmt=style,color=color[i],label=label[i],linewidth=2)
+        else:
+            for i in range(w.shape[0]):
+                ax.plot(w[i,:],style,color=color[i],label=label[i],linewidth=2)
     else:
-        ax.plot(w.T,style,label=label)
+        if error is not None:
+            ax.errorbar(w.T,yerr=error,fmt=style,label=label)
+        else:
+            ax.plot(w.T,style,label=label)
     ax.set_ylabel('weight')
     if xlabels:
+        ax.plot(xlabels,np.zeros((len(xlabels),1)),'k--')
         ax.set_xticks(np.arange(0,len(xlabels)))
         ax.set_xticklabels(xlabels,rotation=90)
         

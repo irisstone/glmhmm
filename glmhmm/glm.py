@@ -178,6 +178,12 @@ class GLM(object):
         phi : nxc array of the updated observation probabilities
         """
         
+        # reshape y from vector of indices to one-hot encoded array for matrix operations in neglogli
+        if len(y.shape) == 1:
+            yint = y.astype(int)
+            y = np.zeros((yint.shape[0], yint.max()+1))
+            y[np.arange(yint.shape[0]),yint] = 1
+
         # optimize loglikelihood given weights
         w_flat = np.ndarray.flatten(w[:,1:]) # flatten weights for optimization 
         opt_log = lambda w: self.neglogli(x,w,y,reshape_weights=True,gammas=gammas,gaussianPrior=gaussianPrior) # calculate log likelihood 

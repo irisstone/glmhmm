@@ -116,6 +116,59 @@ class GLM(object):
         y[np.arange(self.n),obs] = 1
             
         return x,w,y
+
+    def generate_data_from_fit(self, w, x, obs_ix, replace_obs=False, sessions=[None]):
+
+        """
+        Generate simulated data (design matrix amd observations) from fitted GLM weights                                                     
+        Parameters
+        ----------
+        w : 1xd array
+            fitted GLM weights
+        x : nxd array of the true design matrix
+            used for replicating the same environmental context (values other than past observations)
+        obs_ix: list or tuple, optional
+            includes indices of the first and last columns in the design matrix that are associated with observations
+        replace_obs: boolean, optional
+            determines whether or not to replace observation-related values in the design matrix with simulated ones (if there are no observation-related values
+            in the design matrix, set to False)
+        sessions: list, optional
+            the indices of new sessions (if applicable) so that previous observations are coded appropriately at session boundaries
+        Returns
+        -------
+        x : nxd array of the simulated design matrix (will only differ from true design matrix if observations are included as regressors)
+        y : nxc 1/0 array of simulated observations
+        """
+
+        y = np.zeros(self.n)
+
+        # zero out past observations in design matrix (we will simulate new ones)
+        if replace_obs == True:
+            num_past_obs = obs_ix[1] - obs_ix[0]
+            x[:,obs_ix[0]:obs_ix[1]] = np.zeros((self.n,num_past_obs))
+
+        for i in range(self.n):
+
+            if replace_obs == True and (i in sessions):
+                count = -1
+
+            if replace_obs == True and count < num_past_obs and count != -1:
+                x[i,obs_ix[0]:obs_ix[0]+count+1] = np.flip(y[i-count-1:i])
+                count += 1
+            elif replace_obs == True and count != -1: 
+                x[i,obs_ix[0]:obs_ix[1]] = np.flip(y[i-num_past_obs:i])
+            else: 
+                x[i,obs_ix[0]:obs_ix[1]] = np.zeros(num_past_obs)
+                count += 1
+
+            ## generate observation probabilities for time point i
+            phi = self.observations.compObs(x[i,:],w)
+            assert np.round(np.sum(phi),3) == 1, "observation probabilities don't add up to 1"
+
+            # generate observation for time point i
+            y[i] = np.random.choice(np.arange(0,self.c,1), p = phi)
+
+        return x,y
         
     def neglogli(self,x,w,y,reshape_weights=False,gammas=None,gaussianPrior=0):
         """

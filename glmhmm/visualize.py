@@ -86,5 +86,21 @@ def plot_weights(w,ax,xlabels=None,color=None,style='-',label=[''],switch=False,
         ax.set_xticks(np.arange(0,len(xlabels)))
         ax.set_xticklabels(xlabels,rotation=90)
         
+def plot_psychometrics(colors,title,file_path,save_path):
+
+    import matlab.engine
+    eng = matlab.engine.start_matlab()
+    s = eng.genpath('../examples/matlab')
+    eng.addpath(s, nargout=0)
+
+    # convert to matlab data types
+    colors = matlab.double(colors)
+    title = eng.convertCharsToStrings(title)
+    file_path = eng.convertCharsToStrings(file_path)
+    save_path = eng.convertCharsToStrings(save_path)
+
+    ret = eng.fit_psychometrics(colors,title,file_path,save_path)
+
+
     
     

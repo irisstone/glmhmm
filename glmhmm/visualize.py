@@ -10,6 +10,18 @@ Functions for visualizing and plotting results related to glmhmm fitting code
 import matplotlib.pyplot as plt
 import numpy as np
 from glmhmm.utils import find_best_fit
+import matplotlib as mpl
+mpl.rcParams['figure.facecolor'] = '1'
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+
+# set plot design features
+font = {'family'   : 'sans-serif',
+        'sans-serif' : 'Helvetica',
+        'weight'   : 'regular',
+        'size'     : 18}
+
+mpl.rc('font', **font)
     
 def plot_model_params(M,ax,precision='%.2f'):
     

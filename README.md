@@ -17,11 +17,12 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 * fit-glm.ipynb: a simple example of fitting a GLM to simulated data
 * fit-hmm.ipynb: a simple example of fitting an HMM to simulated data
 * fit-hmm-DAEM.ipynb: an example illustrating the benefits of deterministic annealing EM (DAEM), with a comparison to traditional EM
-* fit-glm-hmm.ipynb: two examples of fitting GLM-HMMs, one to simulated data and one to real data, and in the latter case recreating some of the plots shown in [Bolkan,    Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
-</li>
+* fit-glm-hmm.ipynb: an example of fitting GLM-HMMs to simulated data 
 
-#### data
-The data folder includes pre-formatted design matrices and choice behavior for fitting the three mouse data sets described in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
+#### figures
+* data: a folder includeing pre-formatted design matrices and choice behavior for fitting the three mouse data sets described in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
+* matlab: a folder containing MATLAB scripts used for fitting the psychometric curve plots shown in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
+* fig4.ipynb: a notebook describing how to fit a GLM to real data and recreating the plots from Figure 4 in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
 
 ### Installation
 For easy installation, download the code using the link above or type the following into a terminal window:

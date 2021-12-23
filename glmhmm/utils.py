@@ -170,7 +170,8 @@ def uniqueSessionIDs(sessions):
             uniqueSessionIDs[i] = sessionID # assign session ID to all trials in the same session
         else: 
             count += 1 # move to next session
-            sessionID += 1 # add new session ID 
+            sessionID += 1 # add new session ID
+            uniqueSessionIDs[i] = sessionID 
 
     return uniqueSessionIDs
 
@@ -189,8 +190,11 @@ def splitData(sessions,mouseIDs,testSize=0.2,seed=0):
     
     Returns
     -------
-    testSet: 
-    trainSet: 
+    trainTrialIxs: vector with indices from all data associated with training set
+    trainSessionStartIxs: vector contaiining the starting indices of each session in the training set
+    testTrialIxs: indices from all data associated with test set 
+    testSessionStartIxs: vector contaiining the starting indices of each session in the test set
+
 
     '''
 
@@ -206,25 +210,45 @@ def splitData(sessions,mouseIDs,testSize=0.2,seed=0):
 
     testSessions = []
     for i in range(len(unique_mouseID)):
-        mouseSessions = np.unique(sessionIDs[mouseIDs==unique_mouseID[i]])[2:] # find session numbers associated with each mouse
+        mouseSessions = np.unique(sessionIDs[mouseIDs==unique_mouseID[i]]) # find session numbers associated with each mouse
         try: selectedSessions = np.sort(np.random.choice(mouseSessions,size=numTestSessions,replace=False)) # randomly select sessions for test set
         except ValueError: selectedSessions = np.sort(mouseSessions) # if too few sessions available, take all of them
-        print(mouseSessions)
     
         testSessions.append(selectedSessions)
 
-    return sessionIDs
+    testSessionLabels = np.sort(np.array([item for sublist in testSessions for item in sublist]).astype(int))
+    trainSessionLabels = np.delete(sessionLabels,testSessionLabels).astype(int) 
 
-#         test_sessions = testSessions.astype(int) # using new method of taking same number of test sessions from each mouse
-#         train_sessions = np.delete(session_lengths,test_sessions) # remove test sessions from training set
-#         session_lengths = train_sessions
-        
-#         # get session lengths associated with test data
-#         test_session_lengths = np.zeros_like(test_sessions)
-#         count = 0
-#         for test_label in test_sessions:
-#             test_session_lengths[count] = len(np.where(uniqueID == test_label)[0])
-#             count += 1    
+    # get session lengths associated with test and train sets
+    testSessionIxs = sessions[testSessionLabels]
+    testSessionLengths = np.diff(sessions)[testSessionLabels]
+    trainSessionIxs = sessions[trainSessionLabels]
+    trainSessionLengths = np.diff(sessions)[trainSessionLabels]
+
+    # get all the indices of the data points for the test set
+    testTrialIxs = np.zeros(np.sum(testSessionLengths), dtype=int)
+    testSessionStartIxs = np.zeros(len(testSessionIxs)+1, dtype=int)
+    count = 0
+    for i in range(len(testSessionIxs)):
+    	testSessionStartIxs[i] = count
+    	sessLength = testSessionLengths[i]
+    	testTrialIxs[count:count+sessLength] = np.arange(testSessionIxs[i],testSessionIxs[i]+sessLength,1)
+    	count = count+sessLength
+    testSessionStartIxs[-1] = count
+
+    # get all the indices of the data points for the test set
+    trainTrialIxs = np.zeros(np.sum(trainSessionLengths), dtype=int)
+    trainSessionStartIxs = np.zeros(len(trainSessionIxs)+1, dtype=int)
+    count = 0
+    for i in range(len(trainSessionIxs)):
+    	trainSessionStartIxs[i] = count
+    	sessLength = trainSessionLengths[i]
+    	trainTrialIxs[count:count+sessLength] = np.arange(trainSessionIxs[i],trainSessionIxs[i]+sessLength,1)
+    	count = count+sessLength
+    trainSessionStartIxs[-1] = count
+
+    return trainTrialIxs, trainSessionStartIxs, testTrialIxs, testSessionStartIxs
+
         
 #         session_ixs = np.empty((0,1))
 #         for session in test_sessions:

@@ -10,6 +10,7 @@ Miscellaneous helper functions for fitting and analyzing GLM/HMM code
 """
 
 import numpy as np
+import scipy.io as sio
 
 def permute_states(M,method='self-transitions',param='transitions',order=None,ix=None):
     
@@ -103,3 +104,155 @@ def compare_top_weights(w,ixs,tol=0.05):
     else:
         print('None of the weights differ by more than the set tolerance. The largest difference was %.2f.' %(np.max(diff)))
         print('This confirms that the top fits (as specified) all converged on the same solution.')
+
+def convertContraIpsi(laserStatus,cues,choices,dates,save_path,scale=1):
+    
+    cues = cues*scale
+    OFF_data, ONLEFT_data, ONRIGHT_data, OFF_data_right, OFF_data_left = [],[],[],[],[]
+
+    choices = 1-choices # flip all choices
+    for i in range(len(choices)):
+        if np.round(laserStatus[i],2) == 0: #if laser is off
+            OFF_data.append([cues[i],choices[i]])
+            if dates[i] == 1: # if date is even
+                OFF_data_right.append([cues[i]*-1,1-choices[i]])
+            elif dates[i] == -1: # if date is odd
+                OFF_data_left.append([cues[i],choices[i]])
+        if np.round(laserStatus[i],2) == -1: #if laser is on LEFT
+            ONLEFT_data.append([cues[i],choices[i]])
+        if np.round(laserStatus[i],2) == 1: #if laser is on RIGHT
+            ONRIGHT_data.append([cues[i],choices[i]])
+
+    # IPSI/CONTRA LASER DATA
+    ONRIGHT_flipped = []
+    for i in range(len(ONRIGHT_data)):
+        diffT_flipped = ONRIGHT_data[i][0] * -1
+        ONRIGHT_flipped.append([diffT_flipped,1-ONRIGHT_data[i][1]])
+
+    ON_data = ONLEFT_data + ONRIGHT_flipped
+    OFF_data = OFF_data_left + OFF_data_right 
+
+    OFF_data = np.array(OFF_data)
+    ONLEFT_data = np.array(ONLEFT_data)
+    ONRIGHT_data = np.array(ONRIGHT_data)
+    ON_data = np.array(ON_data)
+    
+
+    D = {'diffT_laserOFF': OFF_data[:,0],
+     'choices_laserOFF': OFF_data[:,1],
+     'diffT_laserON': ON_data[:,0],
+     'choices_laserON': ON_data[:,1]}
+    sio.savemat(save_path,D)
+
+    return D
+
+def uniqueSessionIDs(sessions):
+
+    '''
+    Creates unique ID for each session (number of unique IDs == number of unique sessions)
+
+    Parameters
+    ----------
+    sessions: vector containing the starting indices of each session
+    
+    Returns
+    -------
+    uniqueSessionIDs: vector of length N assigning each trial a unique session ID 
+
+    '''
+
+    N = sessions[-1] # total number of trials
+    uniqueSessionIDs = np.zeros(N)
+    sessionID = 0
+    count = 1
+    for i in range(N):
+        if i < sessions[count]: # for trials corresponding to length of each session
+            uniqueSessionIDs[i] = sessionID # assign session ID to all trials in the same session
+        else: 
+            count += 1 # move to next session
+            sessionID += 1 # add new session ID 
+
+    return uniqueSessionIDs
+
+def splitData(sessions,mouseIDs,testSize=0.2,seed=0):
+
+    '''
+    Splits data into train and test sets for cross validation by partitioning entire sessions and balancing 
+    the number of animals in each test set. 
+
+    Parameters
+    ----------
+    sessions : vector containing the starting indices of each session
+    mouseIDs : vector of length N indicating which animal each trial is associated with
+    testSize : the percentage of sessions to put in each test set
+    seed : random seed determines how train and test sets are split
+    
+    Returns
+    -------
+    testSet: 
+    trainSet: 
+
+    '''
+
+    sessionIDs = uniqueSessionIDs(sessions)
+    sessionLabels = np.unique(sessionIDs) # unique session labels (one for each unique session)
+    numSessions = len(sessionLabels) # number of unique sessions
+    testLength = round(numSessions * testSize) # number of sessions to set aside for test data
+        
+    # make sure equal number of sessions are taken from each mouse
+    unique_mouseID = np.unique(mouseIDs) # IDs of each mouse
+    numTestSessions = round(testLength/len(unique_mouseID)) # number of sessions to take from each mouse for test set
+    np.random.seed(seed)
+
+    testSessions = []
+    for i in range(len(unique_mouseID)):
+        mouseSessions = np.unique(sessionIDs[mouseIDs==unique_mouseID[i]])[2:] # find session numbers associated with each mouse
+        try: selectedSessions = np.sort(np.random.choice(mouseSessions,size=numTestSessions,replace=False)) # randomly select sessions for test set
+        except ValueError: selectedSessions = np.sort(mouseSessions) # if too few sessions available, take all of them
+        print(mouseSessions)
+    
+        testSessions.append(selectedSessions)
+
+    return sessionIDs
+
+#         test_sessions = testSessions.astype(int) # using new method of taking same number of test sessions from each mouse
+#         train_sessions = np.delete(session_lengths,test_sessions) # remove test sessions from training set
+#         session_lengths = train_sessions
+        
+#         # get session lengths associated with test data
+#         test_session_lengths = np.zeros_like(test_sessions)
+#         count = 0
+#         for test_label in test_sessions:
+#             test_session_lengths[count] = len(np.where(uniqueID == test_label)[0])
+#             count += 1    
+        
+#         session_ixs = np.empty((0,1))
+#         for session in test_sessions:
+#             ixs = np.where(uniqueID == session)[0]
+#             session_ixs = np.vstack((session_ixs,ixs[:,np.newaxis])) # find indices associated with that session and append to array
+            
+#         session_ixs = session_ixs.astype(int)
+#         training_uniqueIDs = np.delete(uniqueID,session_ixs) # delete test session indices from uniqueID
+#         unique_training_sessions, session_lengths = np.unique(training_uniqueIDs,return_counts = True) # get session lengths from this new vector
+        
+#         # grab selected % of the rows of the design matrix, remove them, and setthem aside as test data
+#         num_total_ixs = session_ixs.shape[0]
+#         test_data_x = np.zeros((num_total_ixs,len(x.T)))
+#         test_data_y = np.zeros((num_total_ixs,len(y.T)))
+#         training_data_x = np.zeros((len(x)-num_total_ixs,len(x.T)))
+#         training_data_y = np.zeros((len(y)-num_total_ixs,len(y.T)))
+#         for i in range(len(x.T)):
+#             test_data_x[:,i] = np.squeeze(np.take(x[:,i],session_ixs.astype('int64'))) # add selected rows to test_data matrix
+#             training_data_x[:,i] = np.delete(x[:,i],session_ixs) # deleted selected rows from training data matrix 
+#         for i in range(len(y.T)):
+#             test_data_y[:,i] = np.squeeze(np.take(y[:,i],session_ixs.astype('int64'))) # add selected rows to test_data matrix
+#             training_data_y[:,i] = np.delete(y[:,i],session_ixs) # deleted selected rows from output matrix 
+            
+#         rewarded = np.delete(rewarded,session_ixs) # deleted selected rows from reward vector
+#         x = training_data_x
+#         y = training_data_y
+        
+#         trial_ixs = None
+
+
+

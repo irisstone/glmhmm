@@ -105,6 +105,20 @@ def compare_top_weights(w,ixs,tol=0.05):
         print('None of the weights differ by more than the set tolerance. The largest difference was %.2f.' %(np.max(diff)))
         print('This confirms that the top fits (as specified) all converged on the same solution.')
 
+def convert_ll_bits(LL,L0,nT):
+    '''
+    Description: converts regular loglikelihood values into "bits."
+    Inputs: 
+        LL: loglikelihood values (1xn vector)
+        L0 = base loglikelihood for subtraction (e.g. LL of bias only) (scalar)
+        nT = length of data (scalar)
+    Outputs: loglikelihood in "bits" (1xn vector)
+    '''
+
+    LL_bits = (LL - L0) / (nT * np.log(2))
+            
+    return LL_bits
+
 def convertContraIpsi(laserStatus,cues,choices,dates,save_path,scale=1):
     
     cues = cues*scale
@@ -248,35 +262,6 @@ def splitData(sessions,mouseIDs,testSize=0.2,seed=0):
     trainSessionStartIxs[-1] = count
 
     return trainTrialIxs, trainSessionStartIxs, testTrialIxs, testSessionStartIxs
-
-        
-#         session_ixs = np.empty((0,1))
-#         for session in test_sessions:
-#             ixs = np.where(uniqueID == session)[0]
-#             session_ixs = np.vstack((session_ixs,ixs[:,np.newaxis])) # find indices associated with that session and append to array
-            
-#         session_ixs = session_ixs.astype(int)
-#         training_uniqueIDs = np.delete(uniqueID,session_ixs) # delete test session indices from uniqueID
-#         unique_training_sessions, session_lengths = np.unique(training_uniqueIDs,return_counts = True) # get session lengths from this new vector
-        
-#         # grab selected % of the rows of the design matrix, remove them, and setthem aside as test data
-#         num_total_ixs = session_ixs.shape[0]
-#         test_data_x = np.zeros((num_total_ixs,len(x.T)))
-#         test_data_y = np.zeros((num_total_ixs,len(y.T)))
-#         training_data_x = np.zeros((len(x)-num_total_ixs,len(x.T)))
-#         training_data_y = np.zeros((len(y)-num_total_ixs,len(y.T)))
-#         for i in range(len(x.T)):
-#             test_data_x[:,i] = np.squeeze(np.take(x[:,i],session_ixs.astype('int64'))) # add selected rows to test_data matrix
-#             training_data_x[:,i] = np.delete(x[:,i],session_ixs) # deleted selected rows from training data matrix 
-#         for i in range(len(y.T)):
-#             test_data_y[:,i] = np.squeeze(np.take(y[:,i],session_ixs.astype('int64'))) # add selected rows to test_data matrix
-#             training_data_y[:,i] = np.delete(y[:,i],session_ixs) # deleted selected rows from output matrix 
-            
-#         rewarded = np.delete(rewarded,session_ixs) # deleted selected rows from reward vector
-#         x = training_data_x
-#         y = training_data_y
-        
-#         trial_ixs = None
 
 
 

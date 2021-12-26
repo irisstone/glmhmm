@@ -319,8 +319,8 @@ class HMM(object):
 
         '''
         
-        lls = np.empty(maxiter)
-        lls[:] = np.nan
+        self.lls = np.empty(maxiter)
+        self.lls[:] = np.nan
             
         # store variables
         self.pi0 = pi0
@@ -339,8 +339,8 @@ class HMM(object):
             alpha = np.zeros((self.n,self.k))
             beta = np.zeros_like(alpha)
             cs = np.zeros((self.n))
-            pBack = np.zeros_like(alpha)
-            zhatBack = np.zeros_like(cs)
+            self.pStates = np.zeros_like(alpha)
+            self.states = np.zeros_like(cs)
             ll = 0
             
             for s in range(len(sess)-1): # compute E step separately over each session or day of data 
@@ -350,20 +350,20 @@ class HMM(object):
                 ll += ll_s
                 alpha[sess[s]:sess[s+1]] = alpha_s
                 cs[sess[s]:sess[s+1]] = cs_s
-                pBack[sess[s]:sess[s+1]] = pBack_s ** B
+                self.pStates[sess[s]:sess[s+1]] = pBack_s ** B # temp param for deterministic annealing
                 beta[sess[s]:sess[s+1]] = beta_s
-                zhatBack[sess[s]:sess[s+1]] = zhatBack_s
+                self.states[sess[s]:sess[s+1]] = zhatBack_s
                 
             
-            lls[n] = ll
+            self.lls[n] = ll
             
             # M STEP
-            A,phi,pi0 = HMM._updateParams(self,y,pBack,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
+            self.A,self.phi,self.pi0 = HMM._updateParams(self,y,self.pStates,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
                 
             # CHECK FOR CONVERGENCE    
-            lls[n] = ll
-            if  n > 0 and lls[n-1] + tol >= ll: # break early if tolerance is reached
+ 
+            if  n > 5 and self.lls[n-5] + tol >= ll: # break early if tolerance is reached
                 break
         
-        return lls,A,phi,pi0
+        return self.lls,self.A,self.phi,self.pi0
     

@@ -148,14 +148,14 @@ class GLMHMM(HMM):
 
         '''
         
-        A = self._updateTransitions(y,alpha,beta,cs,A,phi)
+        self.A = self._updateTransitions(y,alpha,beta,cs,A,phi)
             
-        w, phi = self._updateObservations(y,x,w,gammas)
+        self.w, self.phi = self._updateObservations(y,x,w,gammas)
         
         if fit_init_states: 
             self.pi0 = self._updateInitStates(gammas)
         
-        return A, w, phi, self.pi0
+        return self.A, self.w, self.phi, self.pi0
     
     def fit(self,y,x,A,w,pi0=None,fit_init_states=False,maxiter=250,tol=1e-3,sess=None,B=1):
         '''
@@ -181,8 +181,8 @@ class GLMHMM(HMM):
 
         '''
         
-        lls = np.empty(maxiter)
-        lls[:] = np.nan
+        self.lls = np.empty(maxiter)
+        self.lls[:] = np.nan
             
         # store variables
         self.pi0 = pi0
@@ -219,18 +219,18 @@ class GLMHMM(HMM):
                 zhatBack[sess[s]:sess[s+1]] = zhatBack_s
                 
             
-            lls[n] = ll
+            self.lls[n] = ll
             
             # M STEP
-            A,w,phi,pi0 = self._updateParams(y,x,pBack,beta,alpha,cs,A,phi,w,fit_init_states = fit_init_states)
+            self.A,self.w,self.phi,self.pi0 = self._updateParams(y,x,pBack,beta,alpha,cs,A,phi,w,fit_init_states = fit_init_states)
             
             
             # CHECK FOR CONVERGENCE    
-            lls[n] = ll
-            if  n > 5 and lls[n-5] + tol >= ll: # break early if tolerance is reached
+            self.lls[n] = ll
+            if  n > 5 and self.lls[n-5] + tol >= ll: # break early if tolerance is reached
                 break
         
-        return lls,A,w,pi0
+        return self.lls,self.A,self.w,self.pi0
     
     def computeVariance(self,x,y,A,w,gaussPrior=0):
         

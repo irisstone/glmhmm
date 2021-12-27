@@ -119,6 +119,16 @@ def convert_ll_bits(LL,L0,nT):
             
     return LL_bits
 
+def reshape_obs(y):
+
+    # reshape y from vector of indices to one-hot encoded array for matrix operations in neglogli
+    if len(y.shape) == 1:
+        yint = y.astype(int)
+        y = np.zeros((yint.shape[0], yint.max()+1))
+        y[np.arange(yint.shape[0]),yint] = 1
+
+    return y
+
 def convertContraIpsi(laserStatus,cues,choices,dates,save_path,scale=1):
     
     cues = cues*scale

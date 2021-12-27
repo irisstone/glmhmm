@@ -12,6 +12,7 @@ from scipy import optimize
 from autograd import value_and_grad, hessian
 from warnings import simplefilter
 import glmhmm.observations as obs
+from glmhmm.utils import reshape_obs
 
 class GLM(object):
     
@@ -233,9 +234,7 @@ class GLM(object):
         
         # reshape y from vector of indices to one-hot encoded array for matrix operations in neglogli
         if len(y.shape) == 1:
-            yint = y.astype(int)
-            y = np.zeros((yint.shape[0], yint.max()+1))
-            y[np.arange(yint.shape[0]),yint] = 1
+            y = reshape_obs(y)
 
         # optimize loglikelihood given weights
         w_flat = np.ndarray.flatten(w[:,1:]) # flatten weights for optimization 

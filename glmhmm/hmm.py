@@ -358,12 +358,14 @@ class HMM(object):
             self.lls[n] = ll
             
             # M STEP
-            self.A,self.phi,self.pi0 = HMM._updateParams(self,y,self.pStates,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
+            A,phi,pi0 = HMM._updateParams(self,y,self.pStates,beta,alpha,cs,A,phi,fit_init_states = fit_init_states)
                 
             # CHECK FOR CONVERGENCE    
  
             if  n > 5 and self.lls[n-5] + tol >= ll: # break early if tolerance is reached
                 break
+
+        self.A, self.phi, self.pi0 = A, phi, pi0
         
         return self.lls,self.A,self.phi,self.pi0
     

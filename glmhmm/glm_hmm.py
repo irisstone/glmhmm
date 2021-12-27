@@ -202,8 +202,8 @@ class GLMHMM(HMM):
             alpha = np.zeros((self.n,self.k))
             beta = np.zeros_like(alpha)
             cs = np.zeros((self.n))
-            pBack = np.zeros_like(alpha)
-            zhatBack = np.zeros_like(cs)
+            self.pStates = np.zeros_like(alpha)
+            self.states = np.zeros_like(cs)
             ll = 0
             
             for s in range(len(sess)-1): # compute E step separately over each session or day of data 
@@ -214,15 +214,15 @@ class GLMHMM(HMM):
                 ll += ll_s
                 alpha[sess[s]:sess[s+1]] = alpha_s
                 cs[sess[s]:sess[s+1]] = cs_s
-                pBack[sess[s]:sess[s+1]] = pBack_s ** B
+                self.pStates[sess[s]:sess[s+1]] = pBack_s ** B
                 beta[sess[s]:sess[s+1]] = beta_s
-                zhatBack[sess[s]:sess[s+1]] = zhatBack_s
+                self.states[sess[s]:sess[s+1]] = zhatBack_s
                 
             
             self.lls[n] = ll
             
             # M STEP
-            self.A,self.w,self.phi,self.pi0 = self._updateParams(y,x,pBack,beta,alpha,cs,A,phi,w,fit_init_states = fit_init_states)
+            A,w,phi,pi0 = self._updateParams(y,x,self.pStates,beta,alpha,cs,A,phi,w,fit_init_states = fit_init_states)
             
             
             # CHECK FOR CONVERGENCE    
@@ -230,6 +230,8 @@ class GLMHMM(HMM):
             if  n > 5 and self.lls[n-5] + tol >= ll: # break early if tolerance is reached
                 break
         
+        self.A,self.w,self.phi,self.pi0 = A,w,phi,pi0
+
         return self.lls,self.A,self.w,self.pi0
     
     def computeVariance(self,x,y,A,w,gaussPrior=0):

@@ -129,6 +129,26 @@ def reshape_obs(y):
 
     return y
 
+def compObs(x,w,normalize=True):
+    """
+    Computes the GLM observation probabilities for each data point.
+    Parameters
+    ----------
+    x : nxd array of the data (design matrix)
+    w : dxc array of weights
+    normalize : boolean, optional
+        Determines whether or not observation probabilities are normalized. The default is True.
+    Returns
+    -------
+    phi : nxc array of the observation probabilities
+    """
+    
+    phi = np.exp(x@w) # get exponentials e^(wTx)
+    if normalize:
+        phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
+    
+        return phi
+
 def convertContraIpsi(laserStatus,cues,choices,dates,save_path,scale=1):
     
     cues = cues*scale

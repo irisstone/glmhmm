@@ -11,7 +11,8 @@ Various analysis functions for evaluating the results from fitting glm-hmms (as 
 
 import numpy as np
 import scipy.io as sio
-from glmhmm.utils import convert_ll_bits
+from glmhmm.utils import convert_ll_bits, reshape_obs, compObs
+from glmhmm.glm import GLM
 
 def compare_LL_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y):
     
@@ -33,13 +34,20 @@ def compare_LL_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y):
     test_lls = np.zeros((2))
 
     # compute L0 (LL of the bias-only GLM)
-    L0 = -fit_glm.neglogli(x[:,0],fit_glm.w,y)
+    glm_bias_only = GLM(fit_glm.n,1,fit_glm.c,observations="bernoulli")
+    w_init = glm_bias_only.init_weights()
+    w_bias, _ = glm_bias_only.fit(x[:,0,np.newaxis],w_init,y, compHess=False)
+    L0 = glm_bias_only.ll
 
     # compute LL of GLM with all regressors
-    LL_glm = -fit_glm.neglogli(x,fit_glm.w,y)
+    y_reshaped = reshape_obs(y)
+    LL_glm = -fit_glm.neglogli(x,fit_glm.w,y_reshaped)
 
     # compute LL of GLM-HMM with all regressors
-    LL_glmhmm,_,_ = fit_glmhmm.forwardpass(y,fit_glmhmm.A,fit_glmhmm.phi)
+    phi = np.zeros((len(y),fit_glmhmm.k,fit_glmhmm.c))
+    for i in range(fit_glmhmm.k):
+        phi[:,i,:] = compObs(x,fit_glmhmm.w[i])
+    LL_glmhmm,_,_ = fit_glmhmm.forwardPass(y,fit_glmhmm.A,phi)
 
     # convert both to bits
     test_lls[0] = convert_ll_bits(LL_glm,L0,len(y))

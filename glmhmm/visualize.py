@@ -102,7 +102,7 @@ def plot_psychometrics(colors,title,file_path,save_path):
 
     import matlab.engine
     eng = matlab.engine.start_matlab()
-    s = eng.genpath('../examples/matlab')
+    s = eng.genpath('matlab')
     eng.addpath(s, nargout=0)
 
     # convert to matlab data types
@@ -113,6 +113,17 @@ def plot_psychometrics(colors,title,file_path,save_path):
 
     ret = eng.fit_psychometrics(colors,title,file_path,save_path)
 
+def plot_glmvsglmhmm_performance(data,label,color,avg_sess_length,ax,axis_len=80):
+    ax.plot(np.arange(0,axis_len,0.001),np.arange(0,axis_len,0.001),'k--', linewidth=3)
+    ax.plot(data[:,0]*avg_sess_length,data[:,1]*avg_sess_length,'o',markersize=10,color=color,label=label)
+
+    ax.set_xlim([0.0,axis_len])
+    ax.set_ylim([0.0,axis_len])
+    ax.set_xticks(np.arange(10,75,20))
+    ax.set_yticks(np.arange(10,75,20))
+    ax.set_xticklabels(np.arange(10,75,20),fontsize=24)
+    ax.set_yticklabels(np.arange(10,75,20),fontsize=24)
+    ax.legend(fontsize=15, loc=4)
 
     
     

@@ -74,7 +74,7 @@ def compare_predictions_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y,laser_only=False):
     if laser_only: 
         laserONix = x[:,2] != 0
         x = x[laserONix,:]
-        y = y[laserONix,:]
+        y = y[laserONix]
 
     # create empty vector to store ll values
     test_preds = np.zeros((2))
@@ -84,10 +84,10 @@ def compare_predictions_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y,laser_only=False):
     test_preds[0] = np.sum(np.round(phi[:,1]) == y)/len(y)
 
     # compute prediction accuracy of GLM-HMM
-    phi = np.zeros((len(y),fit_glmhmm.K,fit_glmhmm.C))
-    for i in range(fit_glmhmm.K):
-        phi[:,i,:] = fit_glm.compObs(x,fit_glm.w)
-    _,alpha,_ = fit_glmhmm.forwardpass(y,fit_glmhmm.A,phi)
+    phi = np.zeros((len(y),fit_glmhmm.k,fit_glmhmm.c))
+    for i in range(fit_glmhmm.k):
+        phi[:,i,:] = compObs(x,fit_glmhmm.w[i])
+    _,alpha,_ = fit_glmhmm.forwardPass(y,fit_glmhmm.A,phi)
     pred_choice = np.zeros((len(y)))
     for i in range(len(y)):
         pred_prob = alpha[i,:]@phi[i,:,1] # weighted observation probability

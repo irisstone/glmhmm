@@ -142,6 +142,10 @@ def plot_histogram_run_lengths(bin_heights,bin_edges,ax,color=[0,0,0],label=''):
     # determines whether to take average of multiple histograms based on shape of bin_heights
     if len(bin_heights.shape) > 1: 
         take_average = True
+        num_bins = bin_heights.shape[1]
+    else: 
+        take_average = False
+        num_bins = bin_heights.shape[0]
 
     if take_average:
         # compute statistics
@@ -157,7 +161,6 @@ def plot_histogram_run_lengths(bin_heights,bin_edges,ax,color=[0,0,0],label=''):
     smoothed_counts = fit_line_to_hist(avg_bin_heights,window_size=4)
 
     # plot results
-    num_bins = bin_heights.shape[1]
     half_bin_width = (bin_edges[1]-bin_edges[0])/2
     x = np.linspace(bin_edges[0]-half_bin_width, bin_edges[-1]-half_bin_width, num_bins)
     ax.plot(x,smoothed_counts,color=color,label=label,linewidth=3)

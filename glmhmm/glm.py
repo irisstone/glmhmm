@@ -118,7 +118,7 @@ class GLM(object):
             
         return x,w,y
 
-    def generate_data_from_fit(self, w, x, obs_ix, replace_obs=False, sessions=[None]):
+    def generate_data_from_fit(self, w, x, obs_ix=[0,0], replace_obs=False, sessions=[None]):
 
         """
         Generate simulated data (design matrix amd observations) from fitted GLM weights                                                     

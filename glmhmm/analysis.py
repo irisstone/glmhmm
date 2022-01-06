@@ -13,6 +13,7 @@ import numpy as np
 import scipy.io as sio
 from glmhmm.utils import convert_ll_bits, reshape_obs, compObs
 from glmhmm.glm import GLM
+import matplotlib.pyplot as plt
 
 def compare_LL_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y):
     
@@ -96,5 +97,101 @@ def compare_predictions_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y,laser_only=False):
     
     return test_preds
 
+def fit_line_to_hist(bin_heights,window_size=3):
+    '''
+    Fits a line to a given list of histogram bin heights using a sliding window
+
+    Parameters
+    ----------
+    bin_heights : histogram bin heights
+    window_size : sliding window size
+
+    Returns
+    -------
+    line : the fit line
+    '''
+    line = np.zeros(len(bin_heights),dtype=float)
+    i = 0
+    for bh in bin_heights:
+        if i < 2:
+            line[i] = bh
+        elif i == len(bin_heights)-1:
+            line[i] = 0
+        else:
+            line[i] = np.mean(bin_heights[i-1:i+3])
+        i += 1
+    return line
+
+def blocks_of_laser_effect(sessions,y,laser,num_bins=40,bin_edges=None,min_run=2,side_bias=1):
+    '''
+    Identifies "runs" of consecutively identical choices in the same direction expected by inhibition during laser on trials
+
+    Parameters
+    ----------
+    sessions : vector of starting indices of sessions in data (length equal to total number of sessions)
+    y : vector of observations
+    laser : vector of the status of laser-induced inhibition for each trial (length equal to total number of trials)
+    num_bins : the number of bins to use when generating histograms of the run lengths
+    min_run : number of consecutive identical choice, bias-consistent laser trials to qualify as a "run"
+    side_bias : the direction of choice bias expected by the laser (1 = ipsi, -1 = contra)
+
+    Returns
+    -------
+    bin_edges : the locations of the bin edges (can be used to align multiple histograms), vector of length num_bins
+    bin_heights :  the values of the histogram bin heights for each simulation, matrix of size num_bins x simulations
+    '''
+
+    num_sessions = len(sessions)-1
+
+
+    for i in range(num_sessions):
+        # get values for individual session
+        y_sess = y[sessions[i]:sessions[i+1]]
+        laser_sess = laser[sessions[i]:sessions[i+1]]
+
+                # get choices only for laser on trials
+        laserON_ixs = np.where(laser_sess != 0)[0]
+        laserON_laser_session = laser_sess[laserON_ixs]
+        y_laser_session = y_sess[laserON_ixs]
+
+        # we only care about runs where the choice is consistent with the bias effect we expect from the laser
+        y_laser_bias = y_laser_session * laserON_laser_session # elems=1 if choice is in expected bias direction
+
+        # now collect run lengths that are >min_run_length
+        run_length = 1
+        run_lengths = []
+
+        for i in range(1,len(y_laser_bias)):
+            if y_laser_bias[i] == y_laser_bias[i-1] == side_bias: # if the same as previous laser choice                                 ,,,,,
+                run_length += 1
+
+            else: # change in laser effect
+                if run_length >= min_run_length: # if meets conditions, store run
+                    run_lengths.append(run_length)
+                    laser_ixs_list.append(list(laserON_ixs[i+1-run_length:i+1])) # store indices of trials in each run
+                    track_run_lengths_for_session.append(list(laserON_ixs[i+1-run_length:i+1])) 
+
+                # after storing run or if run not long enough, reset run length
+                run_length = 1
+        if run_length >= min_run_length: 
+                run_lengths.append(run_length)
+                laser_ixs_list.append(list(laserON_ixs[i+1-run_length:i+1]))
+                track_run_lengths_for_session.append(list(laserON_ixs[i+1-run_length:i+1]))
+
+        run_length = 1
+        run_length_lists.append(run_lengths)
+
+    all_run_lengths = np.array(list(itertools.chain(*run_length_lists))) # flatten list of lists into one list
+
+    # get length of run from first laser trial to last (add one to include both edges of list)
+    run_lengths_all_trials = [sublist[-1] - sublist[0] + 1 for sublist in laser_ixs_list] 
+
+    if bin_edges is None:
+        bh,bin_edges,patches = plt.hist(all_run_lengths,align='mid',bins=num_bins,label='data',lw=2,color='k')
+
+    bin_heights,_,_  = plt.hist(all_run_lengths,align='mid',bins=bin_edges)
+    plt.close()
+
+    return bin_edges, bin_heights
 
 

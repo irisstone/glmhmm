@@ -10,6 +10,7 @@ Functions for visualizing and plotting results related to glmhmm fitting code
 import matplotlib.pyplot as plt
 import numpy as np
 from glmhmm.utils import find_best_fit
+from glmhmm.analysis import fit_line_to_hist
 import matplotlib as mpl
 mpl.rcParams['figure.facecolor'] = '1'
 mpl.rcParams['pdf.fonttype'] = 42
@@ -45,7 +46,7 @@ def plot_model_params(M,ax,precision='%.2f'):
             else:
                 ax.text(0.3,((I-i)/I)-(1/(I+2)),precision %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
 
-def plot_loglikelihoods(lls,maxdiff,startix=5):
+def plot_loglikelihoods(lls,maxdiff,ax,startix=5):
     '''
     Plot the trajectory of the log-likelihoods for multiple fits, identify how many top fits (nearly) match, and 
     color those trajectories in the plot accordingly
@@ -64,10 +65,10 @@ def plot_loglikelihoods(lls,maxdiff,startix=5):
     top_matching_lls = lls[ll_diffs < maxdiff,:]
     
     # plot
-    plt.plot(lls.T[startix:], color='black')
-    plt.plot(top_matching_lls.T[startix:], color='red')
-    plt.xlabel('iterations of EM', fontsize=16)
-    plt.ylabel('log-likelihood', fontsize=16)
+    ax.plot(np.arange(startix,lls.shape[1]),lls.T[startix:], color='black')
+    ax.plot(top_matching_lls.T[startix:], color='red')
+    ax.set_xlabel('iterations of EM', fontsize=16)
+    ax.set_ylabel('log-likelihood', fontsize=16)
     
     return np.where(ll_diffs < maxdiff)[0] # return indices of best (matching) fits
 
@@ -124,6 +125,46 @@ def plot_glmvsglmhmm_performance(data,label,color,avg_sess_length,ax,axis_len=80
     ax.set_xticklabels(np.arange(10,75,20),fontsize=24)
     ax.set_yticklabels(np.arange(10,75,20),fontsize=24)
     ax.legend(fontsize=15, loc=4)
+
+def plot_histogram_run_lengths(bin_heights,bin_edges,ax,color=[0,0,0],label=''):
+    '''
+    Recreates Fig 5E/F from the paper.
+
+    Parameters
+    ----------
+    bin_heights : num_sims x num_bins array containing the value of each bin height of each histogram
+    bin_edges : num_bins + 1 vector containing the values of the bin edges
+    ax : the figure axis handle
+    color : desired color for plotting, optional
+    label : the label to be used in the legend, optional
+    '''
+
+    # determines whether to take average of multiple histograms based on shape of bin_heights
+    if len(bin_heights.shape) > 1: 
+        take_average = True
+
+    if take_average:
+        # compute statistics
+        num_sims = bin_heights.shape[0]
+        avg_bin_heights = np.mean(bin_heights,axis=1)
+        std_bin_heights = np.std(bin_heights,axis=1)
+        confidence_interval = avg_bin_heights + 1.96*(std_bin_heights/np.sqrt(num_sims))
+        confidence_range = confidence_interval - avg_bin_heights
+    else:
+        avg_bin_heights = bin_heights
+
+    # obtain smoothed curve from averaged bin heights
+    smoothed_counts = fit_line_to_hist(avg_bin_heights,window_size=4)
+
+    # plot results
+    num_bins = bin_heights.shape[1]
+    half_bin_width = (bin_edges[1]-bin_edges[0])/2
+    x = np.linspace(bin_edges[0]-half_bin_width, bin_edges[-1]-half_bin_width, num_bins)
+    ax.plot(x,smoothed_counts,color=color,label=label,linewidth=3)
+    if take_average:
+        ax.fill_between(x,smoothed_counts-confidence_range,smoothed_counts+confidence_range,color=color,alpha=0.3)
+    ax.legend()
+    ax.set_ylabel('counts')
 
     
     

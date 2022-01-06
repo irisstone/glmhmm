@@ -14,6 +14,7 @@ import scipy.io as sio
 from glmhmm.utils import convert_ll_bits, reshape_obs, compObs
 from glmhmm.glm import GLM
 import matplotlib.pyplot as plt
+import itertools
 
 def compare_LL_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y):
     
@@ -142,21 +143,22 @@ def blocks_of_laser_effect(sessions,y,laser,num_bins=40,bin_edges=None,min_run=2
     '''
 
     num_sessions = len(sessions)-1
+    run_length_lists, laser_ixs_list = [],[]
 
+    y[y==0]=-1 # change coding of choices from 0/1 to -1/1
 
-    for i in range(num_sessions):
+    for j in range(num_sessions):
         # get values for individual session
-        y_sess = y[sessions[i]:sessions[i+1]]
-        laser_sess = laser[sessions[i]:sessions[i+1]]
+        y_sess = y[sessions[j]:sessions[j+1]]
+        laser_sess = laser[sessions[j]:sessions[j+1]]
 
-                # get choices only for laser on trials
+        # get choices only for laser on trials
         laserON_ixs = np.where(laser_sess != 0)[0]
         laserON_laser_session = laser_sess[laserON_ixs]
         y_laser_session = y_sess[laserON_ixs]
 
         # we only care about runs where the choice is consistent with the bias effect we expect from the laser
         y_laser_bias = y_laser_session * laserON_laser_session # elems=1 if choice is in expected bias direction
-
         # now collect run lengths that are >min_run_length
         run_length = 1
         run_lengths = []
@@ -166,17 +168,14 @@ def blocks_of_laser_effect(sessions,y,laser,num_bins=40,bin_edges=None,min_run=2
                 run_length += 1
 
             else: # change in laser effect
-                if run_length >= min_run_length: # if meets conditions, store run
+                if run_length >= min_run: # if meets conditions, store run
                     run_lengths.append(run_length)
                     laser_ixs_list.append(list(laserON_ixs[i+1-run_length:i+1])) # store indices of trials in each run
-                    track_run_lengths_for_session.append(list(laserON_ixs[i+1-run_length:i+1])) 
 
-                # after storing run or if run not long enough, reset run length
-                run_length = 1
-        if run_length >= min_run_length: 
+                run_length = 1 # after storing run or if run not long enough, reset run length
+        if run_length >= min_run: 
                 run_lengths.append(run_length)
                 laser_ixs_list.append(list(laserON_ixs[i+1-run_length:i+1]))
-                track_run_lengths_for_session.append(list(laserON_ixs[i+1-run_length:i+1]))
 
         run_length = 1
         run_length_lists.append(run_lengths)

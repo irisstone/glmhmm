@@ -455,4 +455,47 @@ def plot_fraction_of_trials_per_state(zprobs,sessions,mouseIDs,colors,ax):
 
     ax.set_xlabel('p(state 1)')
     ax.set_ylabel('p(state 2)')
-  
+
+def plot_states_each_session(z,sessions,mouseIDs,ax):
+
+    K = len(np.unique(z)) # number of states
+    session_lengths = np.diff(sessions)
+    unique_mouse_IDs = np.unique(mouseIDs)
+
+    percent_sessions = [[] for i in range(K)] # initialize empty list for each possible number of states
+    for i in unique_mouse_IDs: # for each mouse
+        z_mouse = z[mouseIDs==i] # get subset of state probabilities for mouse
+        ixs_mouse = np.where(mouseIDs==i)[0] # get trial indices for mouse
+        session_num_start = np.where(sessions==ixs_mouse[0])[0][0] # index of first session length for mouse
+        session_num_stop = np.where(sessions==ixs_mouse[-1]+1)[0][0]-1 # index of last session length for mouse
+        
+        session_lengths_mouse = session_lengths[session_num_start:session_num_stop] # list of session lengths for mouse
+            
+        number_of_states  = [[] for i in range(K)] # initialize empty list for each possible number of states
+
+        for j in range(len(session_lengths_mouse)): # for each session for each mouse
+            start = np.sum(session_lengths_mouse[:j])
+            stop = start + session_lengths_mouse[j]
+            z_mouse_session = z_mouse[start:stop]
+
+            # sort sessions into appropriate lists depending on the number of unique states that appear
+            for k in range(K):
+                if len(np.unique(z_mouse_session)) == k+1:
+                    number_of_states[k].append(j) # append session number to appropriate list
+
+        # compute the percentage of sessions that each number of states equates to
+        for k in range(K):
+            percent_sessions[k].append(len(number_of_states[k])/len(session_lengths_mouse))
+
+    average_percent_sessions = np.mean(np.array(percent_sessions),axis=1)
+
+    ax.bar([1,2,3],average_percent_sessions,color=[0.7,0.7,0.7])
+    ax.plot([1,2,3],percent_sessions,'ko',markersize=2)
+    #ax.set_xlabel('# of states')
+    ax.set_ylim([0,1])
+    ax.set_yticks([0,0.25,0.5,0.75,1.0])
+    ax.set_ylabel('% of sessions')
+
+
+
+      

@@ -150,8 +150,8 @@ def plot_histogram_run_lengths(bin_heights,bin_edges,ax,color=[0,0,0],label=''):
     if take_average:
         # compute statistics
         num_sims = bin_heights.shape[0]
-        avg_bin_heights = np.mean(bin_heights,axis=1)
-        std_bin_heights = np.std(bin_heights,axis=1)
+        avg_bin_heights = np.mean(bin_heights,axis=0)
+        std_bin_heights = np.std(bin_heights,axis=0)
         confidence_interval = avg_bin_heights + 1.96*(std_bin_heights/np.sqrt(num_sims))
         confidence_range = confidence_interval - avg_bin_heights
     else:
@@ -169,5 +169,99 @@ def plot_histogram_run_lengths(bin_heights,bin_edges,ax,color=[0,0,0],label=''):
     ax.legend()
     ax.set_ylabel('counts')
 
+def plot_state_performance(y,z,trialTypes,mouseIDs,colors,ax):
+
+    K = len(np.unique(z))
+    rewarded = np.array(y==trialTypes)*1
+    IDs = np.unique(mouseIDs) 
+    num_mice = len(IDs)       
+        
+    # get number of correct choices for each state and mouse
+    state_correct = np.zeros((K,num_mice))
+    state_incorrect = np.zeros((K,num_mice))
+    num_trials = np.zeros((K,num_mice))
+
+    for i in range(K):
+        for j in range(num_mice): 
+            IDix = np.where(mouseIDs==IDs[j])[0]
+            z_mouse = z[IDix] 
+            rewarded_mouse = rewarded[IDix] 
+            num_trials[i,j] = len(np.where(z_mouse==i)[0])
+            z_mouse_state = np.where(z_mouse==i)[0] 
+            state_correct[i,j] = np.sum(rewarded_mouse[z_mouse_state])
+                
+    num_trials[num_trials==0] = np.nan
+    percent_correct = state_correct/num_trials * 100
+    avg_percent_correct = np.nanmean(percent_correct,axis=1)
+        
+    Labels = ('state 1', 'state 2', 'state 3')
+    ax.bar(Labels, np.squeeze(avg_percent_correct),color=colors)
+    ax.plot(Labels,percent_correct,'ko',markersize=2)
+    ax.set_xticks(np.arange(K))
+    ax.set_xticklabels(Labels,rotation=90,fontsize=24)
+    ax.set_ylabel('correct trials (%)',fontsize=24)
+    ax.set_ylim([0,100])
+    ax.set_yticks([0,25,50,75,100])
+    ax.set_yticklabels([0,25,50,75,100],fontsize=24)
+
+def plot_percent_laser_trials(z,laserStatus,mouseIDs,colors,ax):
+
+    K = len(np.unique(z))
+    IDs = np.unique(mouseIDs)
+    num_mice = len(IDs)  
+    nlaserOFF = np.zeros((len(IDs),K))
+    nlaserON = np.zeros((len(IDs),K))
+
+    for i in range(num_mice):   
+        for j in range(K):
+            nlaserOFF[i,j] = len(z[(mouseIDs==IDs[i]) & (z==j) & (laserStatus==0)])
+            nlaserON[i,j] = len(z[(mouseIDs==IDs[i]) & (z==j) & (laserStatus!=0)])
+        
+    total_trials = nlaserOFF + nlaserON
+    total_trials[total_trials==0] = np.nan
+    percentageON = (nlaserON/total_trials)*100
+    meanpercentageON = np.nanmean(percentageON,axis=0)
+
+    Labels = ('state 1','state 2', 'state 3')
+    ax.bar(Labels,meanpercentageON,color=colors,width=0.8)
+    ax.plot(Labels, percentageON.T, 'ko', markersize=2)
+    ax.set_xticks(np.arange(3))
+    ax.set_xticklabels(Labels,rotation=90,fontsize=24)
+    ax.set_yticks(np.arange(0,25,8))
+    ax.set_yticklabels(np.arange(0,25,8),fontsize=24)
+    ax.set_ylabel('trials in state (%)', fontsize=24)
+
+def plot_triggered_average(z,laserStatus,colors,ax,window=5):
+
+    K = len(np.unique(z))
+
+    # find trials where event occurs
+    event_ixs = np.where(laserStatus!=0)[0]
+
+    # identify states before/after event
+    num_back = window
+    num_forward = window+1
+    states_around_event = np.zeros((len(event_ixs),num_back+num_forward))
+
+    for i in range(len(event_ixs)):
+        if  len(z)-num_forward >= event_ixs[i] >= num_back:
+            states_around_event[i,:] = z[event_ixs[i] - num_back: event_ixs[i] + num_forward]
+
+    state_distributions = np.zeros((K,states_around_event.shape[1]))
+    for i in range(states_around_event.shape[1]):
+        for j in range(K):
+            state_distributions[j,i] = len(np.where(states_around_event[:,i] == j)[0])/states_around_event.shape[0]
+            
+    ax.plot(np.zeros((100)),np.arange(0,100),'k--')
+    for j in range(K):
+        ax.plot(np.arange(-5,6,1),state_distributions[j],'.-',color = colors[j],linewidth=3, markersize=10)
+        
+    ax.set_ylim([0.0,0.60])
+    ax.set_yticks(np.arange(0.0,0.61,0.30))
+    ax.set_yticklabels(np.arange(0.0,0.61,0.30),fontsize=24)
+    ax.set_xticks(np.arange(-4,5,2))
+    ax.set_xticklabels(np.arange(-4,5,2),fontsize=24)
+    ax.set_xlabel('# of trials from laser', fontsize=24)
+    ax.set_ylabel('avg. p(state)', fontsize=24)
     
     

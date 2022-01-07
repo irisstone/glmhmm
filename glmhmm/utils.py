@@ -67,6 +67,11 @@ def permute_states(M,method='self-transitions',param='transitions',order=None,ix
             M_perm = np.zeros_like(M)
             for i in range(M.shape[0]):
                 M_perm[i,:,:] = M[order[i],:,:]
+        if param=='states':
+            K = len(np.unique(M))
+            M_perm = np.zeros_like(M)
+            for i in range(K):
+                M_perm[M==i] = order[i]
                 
     # sort by the value of a particular weight
     if method == 'weight value':
@@ -79,7 +84,7 @@ def permute_states(M,method='self-transitions',param='transitions',order=None,ix
         for i in range(M.shape[0]):
             M_perm[i,:] = M[order[i],:]
     
-    return M_perm, order 
+    return M_perm, order.astype(int)
 
 
 def find_best_fit(lls):
@@ -148,6 +153,55 @@ def compObs(x,w,normalize=True):
         phi = np.divide(phi.T,np.sum(phi,axis=1)).T # normalize the exponentials 
     
         return phi
+
+def previous_rewarded_choice(y,delta_cues):
+
+    if y == 0 and delta_cues < 0:
+        rewarded_choice = -1 # correct left choice
+    elif y == 1 and delta_cues > 0: 
+        rewarded_choice = 1 # correct right choice
+    else:
+        rewarded_choice = 0 # incorrect choice
+
+    return rewarded_choice
+
+def get_trial_type(delta_cues):
+
+    if delta_cues < 0: 
+        trial_type = 0
+    elif delta_cues > 0: 
+        trial_type = 1
+    else: 
+        trial_type = np.random.choice(np.array([0,1]))
+
+    return trial_type
+
+def get_trial_history(x,y,i,start_ix,end_ix):
+                    
+    # previous reward
+    trialType = get_trial_type(x[i-1,1])
+    if y[i-1] == trialType: # did mouse receive reward (did it make the correct choice)? if yes...
+        if y[i-1] == 0: # if mouse turned left
+            previous_rewarded_choice = -1
+        if y[i-1] == 1:
+            previous_rewarded_choice = 1
+    else: # if mouse made the wrong choice (was not rewarded)
+        previous_rewarded_choice = 0 
+    
+    x[i,end_ix] = previous_rewarded_choice
+    
+    # previous choice
+    num_past_obs = end_ix - start_ix
+    if i <= num_past_obs:
+        choices = y[0:i]
+        choices = np.where(choices==0,-1,1)
+        x[i,start_ix:start_ix+i] = np.flip(choices)
+    else:
+        choices = y[i-num_past_obs:i]
+        choices = np.where(choices==0,-1,1)
+        x[i,start_ix:end_ix] = np.flip(choices)
+        
+    return x
 
 def convertContraIpsi(laserStatus,cues,choices,dates,save_path,scale=1):
     

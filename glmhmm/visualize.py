@@ -46,6 +46,13 @@ def plot_model_params(M,ax,precision='%.2f'):
             else:
                 ax.text(0.3,((I-i)/I)-(1/(I+2)),precision %(M[i,j]),transform=ax.transAxes,fontsize=15,color=color)
 
+    ax.set_xlabel('state t+1')
+    ax.set_ylabel('state t')
+    ax.set_xticks(np.arange(M.shape[0]))
+    ax.set_xticklabels(np.arange(1,M.shape[0]+1))
+    ax.set_yticks(np.arange(M.shape[0]))
+    ax.set_yticklabels(np.arange(1,M.shape[0]+1))
+
 def plot_loglikelihoods(lls,maxdiff,ax,startix=5):
     '''
     Plot the trajectory of the log-likelihoods for multiple fits, identify how many top fits (nearly) match, and 
@@ -99,7 +106,19 @@ def plot_weights(w,ax,xlabels=None,color=None,style='-',label=[''],switch=False,
         ax.set_xticks(np.arange(0,len(xlabels)))
         ax.set_xticklabels(xlabels,rotation=90)
         
-def plot_psychometrics(colors,title,file_path,save_path):
+def plot_psychometrics(colors,title,file_path,save_path,lb=None,ub=None):
+
+    if lb is None: 
+        lb_off = [1e-6, 1e-6, -np.inf, -np.inf]
+        lb_on = [1e-6, 1e-6, -np.inf, -np.inf]
+    if ub is None: 
+        ub_off = [0.75, 0.75, np.inf, np.inf]
+        ub_on = [0.75, 0.75, np.inf, np.inf]
+    else:
+        lb_off = lb[0]
+        lb_on = lb[1]
+        ub_off = ub[0]
+        ub_on = ub[1]
 
     import matlab.engine
     eng = matlab.engine.start_matlab()
@@ -107,12 +126,14 @@ def plot_psychometrics(colors,title,file_path,save_path):
     eng.addpath(s, nargout=0)
 
     # convert to matlab data types
+    lb = matlab.double([lb_off,lb_on])
+    ub = matlab.double([ub_off,ub_on])
     colors = matlab.double(colors)
     title = eng.convertCharsToStrings(title)
     file_path = eng.convertCharsToStrings(file_path)
     save_path = eng.convertCharsToStrings(save_path)
 
-    ret = eng.fit_psychometrics(colors,title,file_path,save_path)
+    ret = eng.fit_psychometrics(colors,title,file_path,save_path,lb,ub)
 
 def plot_glmvsglmhmm_performance(data,label,color,avg_sess_length,ax,axis_len=80):
     ax.plot(np.arange(0,axis_len,0.001),np.arange(0,axis_len,0.001),'k--', linewidth=3)

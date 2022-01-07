@@ -21,7 +21,7 @@ mpl.rcParams['ps.fonttype'] = 42
 font = {'family'   : 'sans-serif',
         'sans-serif' : 'Helvetica',
         'weight'   : 'regular',
-        'size'     : 18}
+        'size'     : 24}
 
 mpl.rc('font', **font)
     
@@ -406,12 +406,53 @@ def plot_average_dwell_time(z,sessions,mouseIDs,colors,ax,terminal_run=False):
     Labels = ('state 1','state 2', 'state 3')
     ax.bar(Labels,average_run_length_across_mice,color=colors, width=0.8)
     ax.plot(Labels, average_run_length_per_state_per_mouse.T, 'ko', markersize=2)
-    ax.set_ylabel('trials', fontsize=24)
+    ax.set_ylabel('trials')
     ax.set_yticks([0,60,120,180])
-    ax.set_yticklabels([0,60,120,180],fontsize=24)
+    ax.set_yticklabels([0,60,120,180])
     ax.set_xticks(np.arange(3))
-    ax.set_xticklabels(Labels,rotation=90, fontsize=24)
-        
-        
+    ax.set_xticklabels(Labels,rotation=90)
+
+def plot_fraction_of_trials_per_state(zprobs,sessions,mouseIDs,colors,ax):
+
+    K = zprobs.shape[1] # number of states to plot
+    session_IDs = uniqueSessionIDs(sessions) # vector of length N assigning each trial a unique session ID
+      
+    # get mouse IDs so they are sorted in the same order as they appear in the dataset
+    ids, idixs = np.unique(mouseIDs,return_index=True)
+    sorted_mouse_IDs = ids[np.argsort(idixs)]
+
+    # initialize empty arrays and lists
+    prop_time_in_each_state_all_mice = np.empty((K))
+    prop_time_in_each_state_average_mice = np.empty((len(sorted_mouse_IDs),K))
+
+    for i in range(len(sorted_mouse_IDs)): # for each mouse
+        mouse_ixs,session_lengths_mouse = session_lengths_for_animal(mouseIDs,sorted_mouse_IDs[i],session_IDs)
+        zprobs_mouse = zprobs[mouse_ixs]
     
-    
+        start = 0
+        prop_time_in_each_state = np.zeros((len(session_lengths_mouse),K))
+        for j in range(len(session_lengths_mouse)):   
+            runProbs = zprobs_mouse[start:start+session_lengths_mouse[j],:] # get state probabilities for session
+
+            trials_in_each_state = np.zeros((K))        
+            for k in range(K):
+                state_assignment = np.argmax(runProbs,axis=1)
+                trials_in_each_state[k] = len(np.where(state_assignment == k)[0])
+                    
+            prop_time_in_each_state[j,:] = np.round(trials_in_each_state/len(runProbs),5)
+            start = start + session_lengths_mouse[j] # beginning index of next session
+        
+        prop_time_in_each_state_all_mice = np.vstack((prop_time_in_each_state_all_mice,prop_time_in_each_state))
+        prop_time_in_each_state_all_mice = prop_time_in_each_state_all_mice[1:,:]
+
+    for i in range(1,len(prop_time_in_each_state_all_mice)):
+        color = colors.T*prop_time_in_each_state_all_mice[i,:]
+        color[color == 0] = np.nan
+        # plot each dot with a small amount of gaussian noise for easier visualization
+        ax.plot(prop_time_in_each_state_all_mice[i,0]+np.random.normal(loc=0,scale=0.03),\
+                 prop_time_in_each_state_all_mice[i,1]+np.random.normal(loc=0,scale=0.03),\
+                    'o',color=np.nanmean(color.T,axis=0), markersize=4)
+
+    ax.set_xlabel('p(state 1)')
+    ax.set_ylabel('p(state 2)')
+  

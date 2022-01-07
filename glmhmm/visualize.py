@@ -9,7 +9,7 @@ Functions for visualizing and plotting results related to glmhmm fitting code
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from glmhmm.utils import find_best_fit
+from glmhmm.utils import find_best_fit, uniqueSessionIDs
 from glmhmm.analysis import fit_line_to_hist
 import matplotlib as mpl
 mpl.rcParams['figure.facecolor'] = '1'
@@ -284,5 +284,48 @@ def plot_triggered_average(z,laserStatus,colors,ax,window=5):
     ax.set_xticklabels(np.arange(-4,5,2),fontsize=24)
     ax.set_xlabel('# of trials from laser', fontsize=24)
     ax.set_ylabel('avg. p(state)', fontsize=24)
+
+def plot_example_sessions(zprobs,sessions,ax,colors,session_number=0, example=1):
+
+    '''
+    Recreates Fig 7C/D from the paper.
+
+    Parameters
+    ----------
+    zprobs : nxk matrix of state probabilities for each trial
+    sessions : vector of the start index of each session 
+    ax : the figure axis handle
+    session_number : the desired session number to be plotted
+    example : optional, the number example session to be plotted
+    '''
+
+    K = zprobs.shape[1] # number of states to plot
+
+    # get the subset of the zprobs matrix corresponding to the desired session
+    start = sessions[session_number]
+    stop = sessions[session_number+1]
+    zprobs_session = zprobs[start:stop,:]
+    
+    # plot p(state) for each state
+    for i in range(K):
+        ax.plot(np.arange(zprobs_session.shape[0]),zprobs_session[:,i],color=colors[i], label='state %s' %(i+1), linewidth=3)
+
+    # x-axis formatting
+    xlabels = np.array(np.round(np.linspace(0,stop-start-1,num=6,endpoint=True),0),dtype=int)
+    ax.set_xlim([0,stop-start-1])
+    ax.set_xticks(xlabels)
+    ax.set_xticklabels(xlabels,fontsize=24)
+    ax.set_xlabel("trials within session", fontsize=24)
+
+    # y-axis formatting
+    ylabels = [0,0.5,1]
+    ax.set_ylim(0,1)
+    ax.set_yticks(ylabels)
+    ax.set_yticklabels(ylabels, fontsize=24)
+    ax.set_ylabel('p(state)', fontsize=24)
+
+    ax.set_title('example session %s' %(example),fontsize=24)
+        
+        
     
     

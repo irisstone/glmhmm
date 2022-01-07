@@ -496,6 +496,29 @@ def plot_states_each_session(z,sessions,mouseIDs,ax):
     ax.set_yticks([0,0.25,0.5,0.75,1.0])
     ax.set_ylabel('% of sessions')
 
+def plot_state_occupancies(z,mouseIDs,colors,ax):
+
+    K = len(np.unique(z)) # number of states
+    unique_mouse_IDs = np.unique(mouseIDs)
+    num_mice = len(unique_mouse_IDs)
+    percent_time = np.zeros((K,num_mice))
+
+    for i in range(K):
+        for j in range(num_mice):
+            mouse_ixs = np.where(mouseIDs==unique_mouse_IDs[j])[0] # ID of mouse
+            percent_time[i,j] = len(np.where(z[mouse_ixs]==i)[0])/len(z[mouse_ixs])*100
+            
+    avg_percent_time = np.mean(percent_time, axis=1)
+        
+    Labels = ['state %s' %(i+1) for i in range(K)]
+    ax.bar(Labels,avg_percent_time, color = colors)
+    ax.plot(Labels,percent_time,'ko',markersize=2)
+    ax.set_xticks(np.arange(K))
+    ax.set_xticklabels(Labels,rotation=90)
+    ax.set_yticks([0,30,60,90])
+    ax.set_ylabel('time in state (%)')
+        
+
 
 
       

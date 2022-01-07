@@ -325,6 +325,47 @@ def plot_example_sessions(zprobs,sessions,ax,colors,session_number=0, example=1)
     ax.set_ylabel('p(state)', fontsize=24)
 
     ax.set_title('example session %s' %(example),fontsize=24)
+
+def plot_average_state_probabilities(zprobs,sessions,colors,axes):
+
+    K = zprobs.shape[1] # number of states to plot
+    session_lengths = np.diff(sessions)
+    first50trials = np.empty((0,50,zprobs.shape[1]))
+    last50trials = np.empty((0,50,zprobs.shape[1]))
+
+    for i in range(len(session_lengths)):
+
+        # get the subset of the state probabilities corresponding to each session
+        start = sessions[i]
+        stop = sessions[i+1]
+        zprobs_session = zprobs[start:stop,:]
+
+        if len(zprobs_session) >= 100: # session has to be at least 100 trials long to be included
+
+            first50trials = np.concatenate((first50trials,zprobs_session[np.newaxis,0:50,:]),axis=0)
+            last50trials = np.concatenate((last50trials,zprobs_session[np.newaxis,-50:,:]),axis=0)
+
+
+    avg_first50 = np.mean(first50trials,axis=0)
+    avg_last50 = np.mean(last50trials,axis=0)
+    averages = [avg_first50,avg_last50]
+
+    # plot
+    for j in range(2):
+        for i in range(K):
+            axes[j].plot(averages[j][:,i],label='state %s' %(i+1), color=colors[i],linewidth=3)
+        axes[j].set_xlim([0,50])
+        axes[j].set_xticks(np.arange(0,60,25))
+        axes[j].set_xticklabels(np.arange(0,60,25), fontsize=24)
+        axes[j].set_yticks(np.arange(0,0.8,0.3))
+        if j == 0:
+            axes[j].set_ylabel('avg. p(state)', fontsize=24)
+            axes[j].set_xlabel('first 50 trials', fontsize=24)
+            axes[j].set_yticklabels(np.arange(0,0.8,0.3),fontsize=24)
+        else:
+            axes[j].set_yticklabels([])
+            axes[j].set_yticks([])
+            axes[j].set_xlabel('last 50 trials', fontsize=24)
         
         
     

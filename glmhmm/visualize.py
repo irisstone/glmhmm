@@ -9,8 +9,9 @@ Functions for visualizing and plotting results related to glmhmm fitting code
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 from glmhmm.utils import find_best_fit, uniqueSessionIDs
-from glmhmm.analysis import fit_line_to_hist
+from glmhmm.analysis import fit_line_to_hist, dwell_times_per_session, session_lengths_for_animal
 import matplotlib as mpl
 mpl.rcParams['figure.facecolor'] = '1'
 mpl.rcParams['pdf.fonttype'] = 42
@@ -366,6 +367,50 @@ def plot_average_state_probabilities(zprobs,sessions,colors,axes):
             axes[j].set_yticklabels([])
             axes[j].set_yticks([])
             axes[j].set_xlabel('last 50 trials', fontsize=24)
+
+def plot_average_dwell_time(z,sessions,mouseIDs,colors,ax,terminal_run=False):
+
+    K = len(np.unique(z)) # number of states to plot 
+    unique_mouse_IDs = np.unique(mouseIDs) # vector of length equal to the number of mice
+    session_IDs = uniqueSessionIDs(sessions) # vector of length N assigning each trial a unique session ID
+    average_run_length_per_state_per_mouse = np.zeros((len(unique_mouse_IDs),K))
+
+    # loop through each mouse
+    for i in range(len(unique_mouse_IDs)):
+        mouse_ixs,session_lengths_mouse = session_lengths_for_animal(mouseIDs,unique_mouse_IDs[i],session_IDs)
+        z_mouse = z[mouse_ixs] # get the state assignments for that mouse
+
+        # loop through each session for each mouse
+        start = 0
+        run_lengths_in_session  = [[] for i in range(K)] # initialize empty list for each state
+        for j in range(len(session_lengths_mouse)):
+            runStates = z_mouse[start:start+session_lengths_mouse[j]] # get states for session   
+            run_lengths_in_session = dwell_times_per_session(runStates,dwell_times=run_lengths_in_session) # get run lengths for each session  
+            # include last run length of session
+            if terminal_run:
+                run_lengths_in_session[state].append(run_length)      
+            start += session_lengths_mouse[j]
+
+        # get average run length for each state
+        average_run_length_per_state = np.zeros((K))
+        for m in range(len(run_lengths_in_session)):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning) # suppress warning when a run length is empty
+                average_run_length_per_state[m] = np.nanmean(np.array(run_lengths_in_session[m]))
+            
+        average_run_length_per_state_per_mouse[i,:] = average_run_length_per_state
+    
+    average_run_length_across_mice = np.nanmean(average_run_length_per_state_per_mouse,axis=0)
+
+    # plot
+    Labels = ('state 1','state 2', 'state 3')
+    ax.bar(Labels,average_run_length_across_mice,color=colors, width=0.8)
+    ax.plot(Labels, average_run_length_per_state_per_mouse.T, 'ko', markersize=2)
+    ax.set_ylabel('trials', fontsize=24)
+    ax.set_yticks([0,60,120,180])
+    ax.set_yticklabels([0,60,120,180],fontsize=24)
+    ax.set_xticks(np.arange(3))
+    ax.set_xticklabels(Labels,rotation=90, fontsize=24)
         
         
     

@@ -193,4 +193,36 @@ def blocks_of_laser_effect(sessions,y,laser,num_bins=40,bin_edges=None,min_run=2
 
     return bin_edges, bin_heights
 
+def session_lengths_for_animal(animal_IDs,unique_animal_IDs,session_IDs):
 
+    ixs = np.where(animal_IDs == unique_animal_IDs)[0] # get trial ixs for one mouse at a time
+    session_IDs = session_IDs[ixs] # get session IDs for that mouse
+    _, session_lengths = np.unique(session_IDs,return_counts = True)
+
+    return ixs,session_lengths
+
+def dwell_times_per_session(z,dwell_times=None):
+    '''
+    Gets the dwell times associated with each state in a particular session
+    Parameters
+    ----------
+    z : the state probabilities associated with a particular session
+    dwell times : optional, a list of existing dwell times to append to
+    '''
+
+    if dwell_times is None:
+        K = len(np.unique(z))
+        dwell_times = [[] for i in range(K)] # initialize empty list for each state
+
+    # loop through each trial for each session
+    run_length = 1 # start run length at one
+    state = int(z[0]) # get state assignment for initial run
+    for k in range(1,len(z)):  
+        if z[k] == z[k-1]:
+            run_length += 1 # add to run length
+        else:
+            dwell_times[state].append(run_length) # append run length to appropriate list
+            state = int(z[k]) # get state assignment for next run
+            run_length = 1 # reset run length
+
+    return dwell_times

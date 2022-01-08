@@ -20,9 +20,20 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 * fit-glm-hmm.ipynb: an example of fitting GLM-HMMs to simulated data 
 
 #### figures
+##### folders
 * data: a folder includeing pre-formatted design matrices and choice behavior for fitting the three mouse data sets described in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
 * matlab: a folder containing MATLAB scripts used for fitting the psychometric curve plots shown in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
-* fig4.ipynb: a notebook describing how to fit a GLM to real data and recreating the plots from Figure 4 in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
+* fit models: a folder containing the model objects from several models fit during the figure generation process. 
+
+##### notebooks 
+Each jupyter notebook recreates the plots from a specified figure in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
+* fig4.ipynb: a notebook describing how to fit a GLM to real data and recreating the plots from Figure 4
+* fig5.ipynb: a notebook comparing model performance between a standard Bernoulli GLM and a 3-state GLM-HMM, as seen in Figure 5
+* fig6.ipynb: a notebook describing how to fit a 3-state GLM-HMM to real data and recreating the plots from Figure 6
+* fig7.ipynb: a notebook demonstrating statistical analyses to describe how the three states identified by the GLM-HMM manifest in the data and recreating the plots from Figure 7
+* extdatafig7: a notebook detailing model selection and control analyses and recreating the plots from Extended Data Figure 7
+* extdatafig8: a notebook demonstrating how model simulations recapitulate characteristics of the real data and recreating the plots from Extended Data Figure 8
+* extdatafig9: a notebook showing how individual mice occupy different states for each session that they participate in the task and recreating the plots from Extended Data Figure 9
 
 ### Installation
 For easy installation, download the code using the link above or type the following into a terminal window:

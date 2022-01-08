@@ -9,10 +9,10 @@ The <code>matlab</code> folder contains a small number of matlab scripts that we
 
 #### figures
 Each jupyter notebook recreates the plots from a specified figure in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
-* fig4.ipynb: a notebook describing how to fit a GLM to real data and recreating the plots from Figure 4
-* fig5.ipynb: a notebook comparing model performance between a standard Bernoulli GLM and a 3-state GLM-HMM, as seen in Figure 5
-* fig6.ipynb: a notebook describing how to fit a 3-state GLM-HMM to real data and recreating the plots from Figure 6
-* fig7.ipynb: a notebook demonstrating statistical analyses to describe how the three states identified by the GLM-HMM manifest in the data and recreating the plots from Figure 7
-* extdatafig7: a notebook detailing model selection and control analyses and recreating the plots from Extended Data Figure 7
-* extdatafig8: a notebook demonstrating how model simulations recapitulate characteristics of the real data and recreating the plots from Extended Data Figure 8
-* extdatafig9: a notebook showing how individual mice occupy different states for each session that they participate in the task and recreating the plots from Extended Data Figure 9
+* fig4.ipynb: fits a GLM to real data and interprets results
+* fig5.ipynb: compares model performance between a standard Bernoulli GLM and a 3-state GLM-HMM 
+* fig6.ipynb: fits a 3-state GLM-HMM to real data and interpret results
+* fig7.ipynb: analyzes how the three states identified by the GLM-HMM manifest in the data
+* extdatafig7: describes model selection and control analyses
+* extdatafig8: shows how model simulations recapitulate characteristics of the real data
+* extdatafig9: shows how individual mice occupy different states for each session of the task

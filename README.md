@@ -16,7 +16,7 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 #### examples
 * fit-glm.ipynb: a simple example of fitting a GLM to simulated data
 * fit-hmm.ipynb: a simple example of fitting an HMM to simulated data
-* fit-hmm-DAEM.ipynb: an example illustrating the benefits of deterministic annealing EM (DAEM), with a comparison to traditional EM
+* fit-hmm-DAEM.ipynb: an example illustrating the benefits of deterministic annealing EM (DAEM)
 * fit-glm-hmm.ipynb: an example of fitting GLM-HMMs to simulated data 
 
 #### figures

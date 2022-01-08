@@ -412,7 +412,7 @@ def plot_average_dwell_time(z,sessions,mouseIDs,colors,ax,terminal_run=False):
     ax.set_xticks(np.arange(3))
     ax.set_xticklabels(Labels,rotation=90)
 
-def plot_fraction_of_trials_per_state(zprobs,sessions,mouseIDs,colors,ax):
+def plot_fraction_of_trials_per_state(zprobs,sessions,mouseIDs,colors,ax,mouse=None):
 
     K = zprobs.shape[1] # number of states to plot
     session_IDs = uniqueSessionIDs(sessions) # vector of length N assigning each trial a unique session ID
@@ -420,6 +420,9 @@ def plot_fraction_of_trials_per_state(zprobs,sessions,mouseIDs,colors,ax):
     # get mouse IDs so they are sorted in the same order as they appear in the dataset
     ids, idixs = np.unique(mouseIDs,return_index=True)
     sorted_mouse_IDs = ids[np.argsort(idixs)]
+
+    if mouse is not None:
+        sorted_mouse_IDs = [sorted_mouse_IDs[mouse]]
 
     # initialize empty arrays and lists
     prop_time_in_each_state_all_mice = np.empty((K))

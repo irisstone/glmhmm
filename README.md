@@ -9,8 +9,9 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 * glm-hmm.py: GLM-HMM class fitting code
 * init_params.py: a script for defining initialization options for different model parameters
 * observations.py: a script for defining distribution options for GLM observations
-* utils.py: a script containing miscellaneous helper functions (more still to come)
-* visualize.py: a script containing plotting and post-fitting analysis functions (more still to come)
+* utils.py: a script containing miscellaneous helper functions
+* analysis.py: a script containing post-fitting analysis functions used in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
+* visualize.py: a script containing functions for plotting the figures seen in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
 
 
 #### examples

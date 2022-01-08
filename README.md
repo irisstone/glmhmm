@@ -20,6 +20,7 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 * fit-glm-hmm.ipynb: an example of fitting GLM-HMMs to simulated data 
 
 #### figures
+Each jupyter notebook in the <b>figures</b> folder recreates the plots from a specified figure in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
 * data: a folder includeing pre-formatted design matrices and choice behavior for fitting the three mouse data sets described in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
 * matlab: a folder containing MATLAB scripts used for fitting the psychometric curve plots shown in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
 * fit models: a folder containing the model objects from several models fit during the figure generation process. 
@@ -31,7 +32,6 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 * extdatafig8: shows how model simulations recapitulate characteristics of the real data
 * extdatafig9: shows how individual mice occupy different states for each session of the task
 
-Each jupyter notebook in the <b>figures</b>b> folder recreates the plots from a specified figure in [Bolkan, Stone et al 2021](https://www.biorxiv.org/content/10.1101/2021.07.23.453573v1)
 
 ### Installation
 For easy installation, download the code using the link above or type the following into a terminal window:

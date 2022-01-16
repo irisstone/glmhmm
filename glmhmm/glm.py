@@ -12,7 +12,7 @@ from scipy import optimize
 from autograd import value_and_grad, hessian
 from warnings import simplefilter
 import glmhmm.observations as obs
-from glmhmm.utils import reshape_obs
+from glmhmm.utils import reshape_obs, replace_inputs
 
 class GLM(object):
     
@@ -118,7 +118,7 @@ class GLM(object):
             
         return x,w,y
 
-    def generate_data_from_fit(self, w, x, obs_ix=[0,0], replace_obs=False, sessions=[None]):
+    def generate_data_from_fit(self, w, x, obs_ix=[0,0], replace=False, sessions=[0], outcomes=[None]):
 
         """
         Generate simulated data (design matrix amd observations) from fitted GLM weights                                                     
@@ -128,13 +128,20 @@ class GLM(object):
             fitted GLM weights
         x : nxd array of the true design matrix
             used for replicating the same environmental context (values other than past observations)
-        obs_ix: list or tuple, optional
-            includes indices of the first and last columns in the design matrix that are associated with observations
-        replace_obs: boolean, optional
-            determines whether or not to replace observation-related values in the design matrix with simulated ones (if there are no observation-related values
+        obs_ix : list or tuple, optional
+            includes indices of the first and last columns in the design matrix that are associated with observations,
+            followed by the index associated with any outcome-based metric (e.g. previous rewarded choice).
+            Should be set if replace=True. If replacing an outcome-based metric but not observations, set the first
+            two indices to zero. 
+        replace : boolean, optional
+            determines whether or not to replace values in the design matrix, e.g. with simulated observations (if there are no observation-related values
             in the design matrix, set to False)
-        sessions: list, optional
+        sessions : list, optional
             the indices of new sessions (if applicable) so that previous observations are coded appropriately at session boundaries
+        outcomes : list or vector, optional
+            the correct outcome at each trial/time point, useful if outcome cannot be entirely decoded from other inputs
+                (e.g. if stimuli is sometimes neutral or zero and correct outcomes are decided randomly in those instances)
+
         Returns
         -------
         x : nxd array of the simulated design matrix (will only differ from true design matrix if observations are included as regressors)
@@ -143,24 +150,17 @@ class GLM(object):
 
         y = np.zeros(self.n)
 
-        # zero out past observations in design matrix (we will simulate new ones)
-        if replace_obs == True:
-            num_past_obs = obs_ix[1] - obs_ix[0]
-            x[:,obs_ix[0]:obs_ix[1]] = np.zeros((self.n,num_past_obs))
+        num_past_obs = obs_ix[1] - obs_ix[0]
 
         for i in range(self.n):
-
-            if replace_obs == True and (i in sessions):
-                count = -1
-
-            if replace_obs == True and count < num_past_obs and count != -1:
-                x[i,obs_ix[0]:obs_ix[0]+count+1] = np.flip(y[i-count-1:i])
-                count += 1
-            elif replace_obs == True and count != -1: 
-                x[i,obs_ix[0]:obs_ix[1]] = np.flip(y[i-num_past_obs:i])
-            else: 
-                x[i,obs_ix[0]:obs_ix[1]] = np.zeros(num_past_obs)
-                count += 1
+            if replace: 
+                x = replace_inputs(x,y,outcomes,i,obs_ix)
+            if replace and (i in sessions): # insert zeros at session boundaries
+                x[i,obs_ix[0]:obs_ix[1]] = np.zeros((num_past_obs))
+                if len(obs_ix) == 3 and x.shape[1] != obs_ix[2]:
+                    x[:,obs_ix[2]] = 0
+                elif len(obs_ix) == 3 and x.shape[1] != obs_ix[2]:
+                    x[:,-1] = 0
 
             ## generate observation probabilities for time point i
             phi = self.observations.compObs(x[i,:],w)

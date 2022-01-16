@@ -165,41 +165,41 @@ def previous_rewarded_choice(y,delta_cues):
 
     return rewarded_choice
 
-def get_trial_type(delta_cues):
+def get_previous_rewarded_choice(y,outcomes,i): 
 
-    if delta_cues < 0: 
-        trial_type = 0
-    elif delta_cues > 0: 
-        trial_type = 1
-    else: 
-        trial_type = np.random.choice(np.array([0,1]))
-
-    return trial_type
-
-def get_trial_history(x,y,i,start_ix,end_ix):
-                    
-    # previous reward
-    trialType = get_trial_type(x[i-1,1])
-    if y[i-1] == trialType: # did mouse receive reward (did it make the correct choice)? if yes...
+    if y[i-1] == outcomes[i-1]: # did mouse receive reward (did it make the correct choice)? if yes...
         if y[i-1] == 0: # if mouse turned left
             previous_rewarded_choice = -1
-        if y[i-1] == 1:
+        elif y[i-1] == 1:
             previous_rewarded_choice = 1
     else: # if mouse made the wrong choice (was not rewarded)
         previous_rewarded_choice = 0 
-    
-    x[i,end_ix] = previous_rewarded_choice
+
+    return previous_rewarded_choice
+
+
+def replace_inputs(x,y,outcomes,i,ixs):
+        
+    # previous reward            
+    if len(ixs) == 3:
+        if x.shape[1] == ixs[2]:
+            x[i,-1] = get_previous_rewarded_choice(y,outcomes,i)
+        else:
+            x[i,ixs[2]] = get_previous_rewarded_choice(y,outcomes,i)
     
     # previous choice
-    num_past_obs = end_ix - start_ix
-    if i <= num_past_obs:
-        choices = y[0:i]
-        choices = np.where(choices==0,-1,1)
-        x[i,start_ix:start_ix+i] = np.flip(choices)
-    else:
-        choices = y[i-num_past_obs:i]
-        choices = np.where(choices==0,-1,1)
-        x[i,start_ix:end_ix] = np.flip(choices)
+    if ixs[0] + ixs[1] > 0:
+        start_ix = ixs[0]
+        end_ix = ixs[1]
+        num_past_obs = end_ix - start_ix
+        if i <= num_past_obs:
+            choices = y[0:i]
+            choices = np.where(choices==0,-1,1)
+            x[i,start_ix:start_ix+i] = np.flip(choices)
+        else:
+            choices = y[i-num_past_obs:i]
+            choices = np.where(choices==0,-1,1)
+            x[i,start_ix:end_ix] = np.flip(choices)
         
     return x
 

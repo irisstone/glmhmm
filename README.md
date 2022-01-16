@@ -30,8 +30,8 @@ Each jupyter notebook in the <b>figures</b> folder recreates the plots from a sp
 * fig6.ipynb: fits a 3-state GLM-HMM to real data and interpret results
 * fig7.ipynb: analyzes how the three states identified by the GLM-HMM manifest in the data
 * extdatafig7: describes model selection and control analyses
-* extdatafig8: shows how model simulations recapitulate characteristics of the real data
-* extdatafig9: shows how individual mice occupy different states for each session of the task
+* extdatafig9: shows how model simulations recapitulate characteristics of the real data
+* suppfig4: shows how individual mice occupy different states for each session of the task
 
 
 ### Installation

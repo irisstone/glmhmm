@@ -119,7 +119,8 @@ class HMM(object):
 
         '''
         
-        alpha = np.zeros((y.shape[0],self.k)) # forward probabilities p(z_t | x_1:t)
+        alpha = np.zeros((y.shape[0],self.k)) # forward probabilities p(z_t | y_1:t)
+        alpha_prior = np.zeros_like(alpha) # prior probabilities p(z_t | y_1:t-1)
         cs = np.zeros(y.shape[0]) # forward marginal likelihoods
         
         # if not fitting initial state probabilities, initialize to ones
@@ -135,18 +136,20 @@ class HMM(object):
         # first time bin
         pxz = np.multiply(phir[0,:,int(y[0])],np.squeeze(pi0)) # weight t=0 observation probabilities by initial state probabilities
         cs[0] = np.sum(pxz) # normalizer
-        alpha[0] = pxz/cs[0] # conditional p(z_1 | x_1)
+
+        alpha[0] = pxz/cs[0] # conditional p(z_1 | y_1)
+        alpha_prior[0] = 1/self.k # conditional p(z_0 | y_0)
     
         # forward pass for remaining time bins
         for i in np.arange(1,y.shape[0]):
-            alpha_prior = alpha[i-1]@A # propogate uncertainty forward
-            pxz = np.multiply(phir[i,:,int(y[i])],alpha_prior) # joint P(y_1:t,z_t)
+            alpha_prior[i] = alpha[i-1]@A # propogate uncertainty forward
+            pxz = np.multiply(phir[i,:,int(y[i])],alpha_prior[i]) # joint P(y_1:t,z_t)
             cs[i] = np.sum(pxz) # conditional p(y_t | y_1:t-1)
             alpha[i] = pxz/cs[i] # conditional p(z_t | y_1:t)
         
         ll = np.sum(np.log(cs))
         
-        return ll,alpha,cs
+        return ll,alpha,alpha_prior,cs
         
     
     def backwardPass(self,y,A,phi,alpha,cs):
@@ -344,7 +347,7 @@ class HMM(object):
             ll = 0
             
             for s in range(len(sess)-1): # compute E step separately over each session or day of data 
-                ll_s,alpha_s,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=pi0)
+                ll_s,alpha_s,_,cs_s = HMM.forwardPass(self,y[sess[s]:sess[s+1]],A,phi,pi0=pi0)
                 pBack_s,beta_s,zhatBack_s = HMM.backwardPass(self,y[sess[s]:sess[s+1]],A,phi,alpha_s,cs_s)
                 
                 ll += ll_s

@@ -89,10 +89,10 @@ def compare_predictions_GLMvsGLMHMM(fit_glm,fit_glmhmm,x,y,laser_only=False):
     phi = np.zeros((len(y),fit_glmhmm.k,fit_glmhmm.c))
     for i in range(fit_glmhmm.k):
         phi[:,i,:] = compObs(x,fit_glmhmm.w[i])
-    _,alpha,_ = fit_glmhmm.forwardPass(y,fit_glmhmm.A,phi)
+    _,_,alpha_prior,_ = fit_glmhmm.forwardPass(y,fit_glmhmm.A,phi)
     pred_choice = np.zeros((len(y)))
     for i in range(len(y)):
-        pred_prob = alpha[i,:]@phi[i,:,1] # weighted observation probability
+        pred_prob = alpha_prior[i,:]@phi[i,:,1] # weighted observation probability
         pred_choice[i] = np.round(pred_prob) # predicted choice
     test_preds[1] = np.sum(pred_choice == y)/len(y)
     

@@ -146,7 +146,7 @@ def plot_glmvsglmhmm_performance(data,label,color,avg_sess_length,ax,axis_len=80
     ax.set_yticks(np.arange(10,75,20))
     ax.set_xticklabels(np.arange(10,75,20),fontsize=24)
     ax.set_yticklabels(np.arange(10,75,20),fontsize=24)
-    ax.legend(fontsize=15, loc=4)
+    ax.legend(fontsize=20, loc=4)
 
 def plot_histogram_run_lengths(bin_heights,bin_edges,ax,color=[0,0,0],label=''):
     '''
@@ -188,8 +188,9 @@ def plot_histogram_run_lengths(bin_heights,bin_edges,ax,color=[0,0,0],label=''):
     ax.plot(x,smoothed_counts,color=color,label=label,linewidth=3)
     if take_average:
         ax.fill_between(x,smoothed_counts-confidence_range,smoothed_counts+confidence_range,color=color,alpha=0.3)
-    ax.legend()
+    ax.legend(fontsize=20)
     ax.set_ylabel('counts')
+    ax.set_xlabel('consecutive choices contra/ipsilateral \n to inhibited hemisphere')
 
 def plot_state_performance(y,z,trialTypes,mouseIDs,colors,ax):
 
@@ -520,6 +521,83 @@ def plot_state_occupancies(z,mouseIDs,colors,ax):
     ax.set_xticklabels(Labels,rotation=90)
     ax.set_yticks([0,30,60,90])
     ax.set_ylabel('time in state (%)')
+
+def plot_simulated_vs_true_transitions(A_true,A_sim,ax,colors=None,diag=True):
+    '''
+    A_true : kxk matrix containing the values of the true transition probabilities
+    A_sim : sxkxk matrix containing the values of the simulated transition probabilities, where s is the number of simulations
+    ax : the figure axis handle
+    colors : a list of size three arrays containing the RBG color values for plotting the simulated and true transition probabilities
+    diag : boolean, default=True. If True, plots the on-diagonal transition probabilities. If False, plots the off-diagonals.
+    '''
+
+    num_sims = A_sim.shape[0]
+    K = A_true.shape[0]
+
+    if colors is None: 
+
+        colors = [np.array([165,165,165])/255,np.array([0,0,0])]
+
+    if diag: # plot diagonal values
+
+        # plot simulated transition probabilities
+        for i in range(num_sims):
+            diags_simulated = np.zeros(K)
+            for j in range(K):
+                diags_simulated[j] = A_sim[i,j,j]
+            ax.plot(diags_simulated,'.',color=colors[0],markersize=10)
+            print(diags_simulated)
+
+        # plot true transition probabilities
+        diags_true = np.zeros(K)
+        for i in range(K):
+            diags_true[i] = A_true[i,i]
+        ax.plot(diags_true,'.',color=colors[1],markersize=10)
+
+        # format plot
+        ax.set_ylabel('$p(z_{t+1} | z_t)$')
+        ax.set_yticks([0.985,0.990,0.995])
+        ax.set_ylim([0.9845,0.995])
+        #ax.set_xticks(np.arange(K))
+        #xlabels = ['$P_{%s%s}$' %(i+1,i+1) for i in range(K)]
+        #ax.set_xticks(np.arange(K),xlabels)
+
+    else: # plot off-diagonal values
+
+        # plot simulated transition probabilities
+        for i in range(num_sims):
+            offdiags_simulated = np.zeros((K*K)-K)
+            count = 0
+            for j in range(K):
+                for k in range(K):
+                    if j != k:
+                        offdiags_simulated[count] = A_sim[i,j,k]
+                        count += 1
+            # only add legend once 
+            if i == 0:
+                ax.plot(offdiags_simulated,'.',color=colors[0],markersize=10, label = 'simulation')
+            else: 
+                ax.plot(offdiags_simulated,'.',color=colors[0],markersize=10)
+
+
+        # plot true transition probabilities
+        offdiags_real = np.zeros((K*K)-K)
+        count = 0
+        xlabels = []
+        for j in range(K):
+            for k in range(K):
+                if j != k:
+                    offdiags_real[count] = A_true[j,k]
+                    xlabels.append('$P_{%s%s}$' %(j+1,k+1))
+                    count += 1
+
+        plt.plot(offdiags_real,'.',color=colors[1],markersize=10,label= 'data')
+
+        # format plot
+        ax.set_ylabel('$p(z_{t+1} | z_t)$')
+        ax.yticks([0,0.005,0.01,0.015, 0.02])
+        ax.set_xticks(np.arange((K*K)-K))
+        ax.set_xticklabels(np.arange((K*K)-K),xlabels)
         
 
 

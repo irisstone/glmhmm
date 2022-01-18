@@ -293,7 +293,6 @@ def splitData(sessions,mouseIDs,testSize=0.2,seed=0):
     testTrialIxs: indices from all data associated with test set 
     testSessionStartIxs: vector contaiining the starting indices of each session in the test set
 
-
     '''
 
     sessionIDs = uniqueSessionIDs(sessions)
@@ -346,6 +345,55 @@ def splitData(sessions,mouseIDs,testSize=0.2,seed=0):
     trainSessionStartIxs[-1] = count
 
     return trainTrialIxs, trainSessionStartIxs, testTrialIxs, testSessionStartIxs
+
+
+def crossval_split(x,y,sessions,mouseIDs,test_size=0.2, seeds=None):
+
+    '''
+    Splits data into train and test sets for cross validation by partitioning entire sessions and balancing 
+    the number of animals in each test set. 
+
+    Parameters
+    ----------
+    x : N x m design matrix
+    y : length N vector of observations
+    sessions : vector containing the starting indices of each session
+    mouseIDs : vector of length N indicating which animal each trial is associated with
+    test_size : optional, the percentage of sessions to put in each test set (default is 0.2)
+    seeds : optional, list of random seeds that determines how train and test sets are split (length = N/test_size)
+    
+    Returns
+    -------
+    x_train : training sets for the design matrix
+    x_test : test sets for the design matrix
+    y_train : training sets for the observations
+    y_test : test sets for the observations
+    sessions_train : starting indices of the sessions in each training set
+    sessions_test : starting indices of the sessions in each test set
+    testIx : indices of the trials alloted to each test set
+    seeds : list of random seeds that determines how train and test sets are split (length = N/test_size)
+
+    '''
+
+    # if seeds not specified, choose randomly
+    if seeds is None:
+        seeds = np.random.randint(0,high=500,size=int(N/0.2))
+
+    # initialize as lists since not every test/train set will be exactly the same size
+    x_train, x_test, y_train, y_test, sessions_train, sessions_test, testIx = [],[],[],[],[],[],[]
+
+    # split the data
+    for seed in seeds:
+        train_ix, sessionsTrain, test_ix, sessionsTest = splitData(sessions,mouseIDs,testSize=test_size,seed=seed)
+        x_train.append(x[train_ix,:])
+        x_test.append(x[test_ix,:])
+        y_train.append(y[train_ix])
+        y_test.append(y[test_ix])
+        sessions_train.append(sessionsTrain)
+        sessions_test.append(sessionsTest)
+        testIx.append(test_ix)
+
+    return x_train, x_test, y_train, y_test, sessions_train, sessions_test, testIx, seeds
 
 
 

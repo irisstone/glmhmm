@@ -328,7 +328,7 @@ def plot_example_sessions(zprobs,sessions,ax,colors,session_number=0, example=1)
 
     ax.set_title('example session %s' %(example),fontsize=24)
 
-def plot_average_state_probabilities(zprobs,sessions,colors,axes):
+def plot_average_state_probabilities(zprobs,sessions,colors,axes,alpha=1,linewidth=3):
 
     K = zprobs.shape[1] # number of states to plot
     session_lengths = np.diff(sessions)
@@ -355,7 +355,7 @@ def plot_average_state_probabilities(zprobs,sessions,colors,axes):
     # plot
     for j in range(2):
         for i in range(K):
-            axes[j].plot(averages[j][:,i],label='state %s' %(i+1), color=colors[i],linewidth=3)
+            axes[j].plot(averages[j][:,i],label='state %s' %(i+1), color=colors[i],linewidth=linewidth,alpha=alpha)
         axes[j].set_xlim([0,50])
         axes[j].set_xticks(np.arange(0,60,25))
         axes[j].set_xticklabels(np.arange(0,60,25), fontsize=24)
@@ -385,11 +385,9 @@ def plot_average_dwell_time(z,sessions,mouseIDs,colors,ax,terminal_run=False):
         start = 0
         run_lengths_in_session  = [[] for i in range(K)] # initialize empty list for each state
         for j in range(len(session_lengths_mouse)):
-            runStates = z_mouse[start:start+session_lengths_mouse[j]] # get states for session   
-            run_lengths_in_session = dwell_times_per_session(runStates,dwell_times=run_lengths_in_session) # get run lengths for each session  
-            # include last run length of session
-            if terminal_run:
-                run_lengths_in_session[state].append(run_length)      
+            runStates = z_mouse[start:start+session_lengths_mouse[j]] # get states for session  
+            # get run lengths for each session 
+            run_lengths_in_session = dwell_times_per_session(runStates,dwell_times=run_lengths_in_session,terminal_run=terminal_run)        
             start += session_lengths_mouse[j]
 
         # get average run length for each state
@@ -546,7 +544,6 @@ def plot_simulated_vs_true_transitions(A_true,A_sim,ax,colors=None,diag=True):
             for j in range(K):
                 diags_simulated[j] = A_sim[i,j,j]
             ax.plot(diags_simulated,'.',color=colors[0],markersize=10)
-            print(diags_simulated)
 
         # plot true transition probabilities
         diags_true = np.zeros(K)
@@ -556,11 +553,16 @@ def plot_simulated_vs_true_transitions(A_true,A_sim,ax,colors=None,diag=True):
 
         # format plot
         ax.set_ylabel('$p(z_{t+1} | z_t)$')
+        ax.set_xlabel('transitions')
+        ax.set_title('diagonal',fontsize=24)
         ax.set_yticks([0.985,0.990,0.995])
         ax.set_ylim([0.9845,0.995])
-        #ax.set_xticks(np.arange(K))
-        #xlabels = ['$P_{%s%s}$' %(i+1,i+1) for i in range(K)]
-        #ax.set_xticks(np.arange(K),xlabels)
+        ax.set_xticks(np.arange(K))
+        xlabels = ["$P_{%s%s}$" %(i+1,i+1) for i in range(K)]
+        ax.set_xticklabels(xlabels)
+        
+
+
 
     else: # plot off-diagonal values
 
@@ -578,7 +580,7 @@ def plot_simulated_vs_true_transitions(A_true,A_sim,ax,colors=None,diag=True):
                 ax.plot(offdiags_simulated,'.',color=colors[0],markersize=10, label = 'simulation')
             else: 
                 ax.plot(offdiags_simulated,'.',color=colors[0],markersize=10)
-
+        
 
         # plot true transition probabilities
         offdiags_real = np.zeros((K*K)-K)
@@ -591,14 +593,16 @@ def plot_simulated_vs_true_transitions(A_true,A_sim,ax,colors=None,diag=True):
                     xlabels.append('$P_{%s%s}$' %(j+1,k+1))
                     count += 1
 
-        plt.plot(offdiags_real,'.',color=colors[1],markersize=10,label= 'data')
+        ax.plot(offdiags_real,'.',color=colors[1],markersize=10,label= 'data')
 
         # format plot
         ax.set_ylabel('$p(z_{t+1} | z_t)$')
-        ax.yticks([0,0.005,0.01,0.015, 0.02])
+        ax.set_xlabel('transitions')
+        ax.set_title('off-diagonal',fontsize=24)
+        ax.set_yticks(np.arange(0,0.021,0.005))
         ax.set_xticks(np.arange((K*K)-K))
-        ax.set_xticklabels(np.arange((K*K)-K),xlabels)
-        
+        ax.set_xticklabels(xlabels)    
+        ax.legend(fontsize=18)    
 
 
 

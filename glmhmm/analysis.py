@@ -201,13 +201,16 @@ def session_lengths_for_animal(animal_IDs,unique_animal_IDs,session_IDs):
 
     return ixs,session_lengths
 
-def dwell_times_per_session(z,dwell_times=None):
+def dwell_times_per_session(z,dwell_times=None,terminal_run=False):
     '''
     Gets the dwell times associated with each state in a particular session
     Parameters
     ----------
     z : the state probabilities associated with a particular session
     dwell times : optional, a list of existing dwell times to append to
+    terminal run : boolean, optional, determines whether to include the last run in the session in 
+    computing dwell times. Default False (as the terminal runs are truncated prematurely by the end
+    of the session)
     '''
 
     if dwell_times is None:
@@ -224,5 +227,9 @@ def dwell_times_per_session(z,dwell_times=None):
             dwell_times[state].append(run_length) # append run length to appropriate list
             state = int(z[k]) # get state assignment for next run
             run_length = 1 # reset run length
+
+    # include last run length of session
+    if terminal_run:
+        dwell_times[state].append(run_length) 
 
     return dwell_times
